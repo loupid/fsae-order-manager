@@ -78,11 +78,11 @@ export async function notifyPurchaseOrderCreated(purchaseOrder, items = [], purc
     (items.length > 5 ? `\n... et ${items.length - 5} autre(s) article(s)` : '');
 
   const payload = {
-    username: 'FSAE Logistics Bot',
+    username: 'Formule SAE UQTR Logistics Bot',
     embeds: [
       {
         title: `📦 Nouvelle Commande Fournisseur: ${purchaseOrder.po_number}`,
-        color: colorMap[maxUrgency] || 0x3498DB,
+        color: colorMap[maxUrgency] || 0x059669,
         fields: [
           { name: 'PO #', value: purchaseOrder.po_number, inline: true },
           { name: 'Fournisseur', value: purchaseOrder.supplier, inline: true },
@@ -93,7 +93,7 @@ export async function notifyPurchaseOrderCreated(purchaseOrder, items = [], purc
           { name: 'Sous-systèmes Impactés', value: subString, inline: false },
           { name: `Articles (${items.length})`, value: itemPreview || 'Aucun article listé', inline: false }
         ],
-        footer: { text: 'FSAE Order Manager • Logistics Engine' },
+        footer: { text: 'Formule SAE UQTR • Monoplace Électrique' },
         timestamp: new Date().toISOString()
       }
     ]
@@ -112,18 +112,18 @@ export async function notifyPartsReceived(purchaseOrder, receivedItems = [], cus
   const itemSummary = receivedItems.map(i => `• [${i.subsystem_code || 'GEN'}] ${i.description} (x${i.quantity}) - SKU: ${i.sku}`).join('\n');
 
   const payload = {
-    username: 'FSAE Logistics Bot',
+    username: 'Formule SAE UQTR Logistics Bot',
     embeds: [
       {
-        title: `🏁 Pièces Reçues à l'Atelier: ${purchaseOrder.po_number}`,
+        title: `🏁 Pièces Reçues à l'Atelier UQTR: ${purchaseOrder.po_number}`,
         color: 0x9B59B6, // Purple
-        description: `Les pièces commandées chez **${purchaseOrder.supplier}** sont arrivées et prêtes pour l'équipe!`,
+        description: `Les pièces commandées chez **${purchaseOrder.supplier}** sont arrivées à l'atelier et prêtes pour l'équipe!`,
         fields: [
           { name: 'Fournisseur', value: purchaseOrder.supplier, inline: true },
           { name: 'Statut PO', value: purchaseOrder.status, inline: true },
           { name: 'Articles Disponibles', value: itemSummary || 'Articles marqués reçus', inline: false }
         ],
-        footer: { text: 'FSAE Order Manager • Workshop Notification' },
+        footer: { text: 'Formule SAE UQTR • Monoplace Électrique' },
         timestamp: new Date().toISOString()
       }
     ]

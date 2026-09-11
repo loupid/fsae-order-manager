@@ -60,24 +60,25 @@ export default function LoginView() {
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
           <div style={{
-            width: '48px',
-            height: '48px',
-            borderRadius: '12px',
-            background: 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)',
+            width: '52px',
+            height: '52px',
+            borderRadius: '14px',
+            background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '1.5rem',
+            fontSize: '1.65rem',
             margin: '0 auto 0.75rem',
-            boxShadow: '0 0 20px rgba(239, 68, 68, 0.4)'
+            boxShadow: '0 0 22px rgba(16, 185, 129, 0.45)',
+            border: '1px solid #10b981'
           }}>
             ⚡
           </div>
           <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#f8fafc', margin: '0 0 0.25rem' }}>
-            FSAE Order Manager
+            Formule SAE <span style={{ color: '#10b981' }}>UQTR</span>
           </h2>
-          <p style={{ fontSize: '0.82rem', color: '#94a3b8', margin: 0 }}>
-            Plateforme logistique & approvisionnement FSAE Électrique
+          <p style={{ fontSize: '0.82rem', color: '#fb923c', margin: 0, fontWeight: '600' }}>
+            Logistique & Approvisionnement — Monoplace Électrique
           </p>
         </div>
 
@@ -107,7 +108,7 @@ export default function LoginView() {
                 cursor: 'pointer'
               }}
             >
-              👤 Membre
+              👤 Alexandre (Élec)
             </button>
             <button
               type="button"
@@ -123,23 +124,23 @@ export default function LoginView() {
                 cursor: 'pointer'
               }}
             >
-              🛒 Acheteur
+              🛒 Sarah (Achats)
             </button>
             <button
               type="button"
               onClick={() => handleQuickPersona('admin@fsae.org', 'AdminPassword123!')}
               style={{
                 padding: '0.35rem 0.45rem',
-                backgroundColor: '#3b1d54',
-                border: '1px solid #9333ea',
+                backgroundColor: '#064e3b',
+                border: '1px solid #059669',
                 borderRadius: '5px',
-                color: '#e9d5ff',
+                color: '#a7f3d0',
                 fontSize: '0.72rem',
                 fontWeight: '600',
                 cursor: 'pointer'
               }}
             >
-              👑 Admin
+              👑 William (ECU)
             </button>
           </div>
         </div>
@@ -279,7 +280,7 @@ export default function LoginView() {
               padding: '0.75rem',
               borderRadius: '8px',
               border: 'none',
-              backgroundColor: '#ef4444',
+              backgroundColor: '#059669',
               color: '#fff',
               fontWeight: '700',
               fontSize: '0.9rem',
@@ -288,7 +289,7 @@ export default function LoginView() {
               alignItems: 'center',
               justifyContent: 'center',
               gap: '0.5rem',
-              boxShadow: '0 4px 12px rgba(239, 68, 68, 0.35)'
+              boxShadow: '0 4px 14px rgba(5, 150, 105, 0.4)'
             }}
           >
             <span>{submitting ? 'Vérification...' : isRegister ? 'Créer mon compte' : 'Se connecter'}</span>

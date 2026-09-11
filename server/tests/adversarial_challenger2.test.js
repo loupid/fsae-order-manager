@@ -151,7 +151,7 @@ adversarialTest('SEED-01: Multi-run idempotency on fresh database (10 consecutiv
     const seedResult = runSeed(db);
 
     assert.equal(seedResult.usersCount, 3, `Iteration ${iteration}: Users count is 3`);
-    assert.equal(seedResult.subsystemsCount, 6, `Iteration ${iteration}: Subsystems count is 6`);
+    assert.equal(seedResult.subsystemsCount, 5, `Iteration ${iteration}: Subsystems count is 5`);
     assert.equal(seedResult.purchaseOrdersCount, 2, `Iteration ${iteration}: Purchase Orders count is 2`);
     assert.equal(seedResult.partRequestsCount, 8, `Iteration ${iteration}: Part Requests count is 8`);
     assert.equal(seedResult.invoicesCount, 2, `Iteration ${iteration}: Invoices count is 2`);
@@ -164,7 +164,7 @@ adversarialTest('SEED-01: Multi-run idempotency on fresh database (10 consecutiv
     const dbInvoices = db.prepare('SELECT COUNT(*) as c FROM invoices').get().c;
 
     assert.equal(dbUsers, 3, `DB Users count must remain 3 on run ${iteration}`);
-    assert.equal(dbSubsystems, 6, `DB Subsystems count must remain 6 on run ${iteration}`);
+    assert.equal(dbSubsystems, 5, `DB Subsystems count must remain 5 on run ${iteration}`);
     assert.equal(dbPOs, 2, `DB Purchase Orders count must remain 2 on run ${iteration}`);
     assert.equal(dbReqs, 8, `DB Part Requests count must remain 8 on run ${iteration}`);
     assert.equal(dbInvoices, 2, `DB Invoices count must remain 2 on run ${iteration}`);
@@ -231,7 +231,7 @@ adversarialTest('CASCADE-01: Deleting a PO with multiple Invoices and multiple P
 
   const purchaser = db.prepare("SELECT id FROM users WHERE role = 'Purchaser'").get();
   const member = db.prepare("SELECT id FROM users WHERE role = 'Member'").get();
-  const sub = db.prepare("SELECT id FROM subsystems WHERE code = 'POW'").get();
+  const sub = db.prepare("SELECT id FROM subsystems WHERE code = 'ELE'").get();
 
   // 1. Create a dedicated PO for stress testing
   const poInfo = db.prepare(`
@@ -316,7 +316,7 @@ adversarialTest('CASCADE-03: ON DELETE RESTRICT protects Subsystems with active 
   const db = initDatabase(':memory:');
   runSeed(db);
 
-  const powSub = db.prepare("SELECT id FROM subsystems WHERE code = 'POW'").get();
+  const powSub = db.prepare("SELECT id FROM subsystems WHERE code = 'ELE'").get();
 
   // Attempting to delete subsystem referenced by part_requests must fail
   assert.throws(() => {

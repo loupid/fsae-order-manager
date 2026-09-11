@@ -69,10 +69,10 @@ export default function CostReportView() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#f8fafc', margin: '0 0 0.25rem' }}>
-            Rapport de Coûts & Budgets FSAE (Cost Report)
+            Formule SAE <span style={{ color: '#10b981' }}>UQTR</span> — Rapport de Coûts & Budgets
           </h2>
           <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: 0 }}>
-            Suivi financier en temps réel des dépenses engagées et réelles par sous-système de la monoplace électrique.
+            Suivi financier en direct des dépenses engagées et réelles des 5 Teams de la monoplace électrique.
           </p>
         </div>
 
@@ -84,9 +84,9 @@ export default function CostReportView() {
               alignItems: 'center',
               gap: '0.4rem',
               padding: '0.55rem 1rem',
-              backgroundColor: '#3b1d54',
-              color: '#c084fc',
-              border: '1px solid #9333ea',
+              backgroundColor: '#064e3b',
+              color: '#6ee7b7',
+              border: '1px solid #059669',
               borderRadius: '8px',
               fontSize: '0.82rem',
               fontWeight: '700',
@@ -94,7 +94,7 @@ export default function CostReportView() {
             }}
           >
             <Plus style={{ width: '16px', height: '16px' }} />
-            + Ajouter Sous-Système
+            + Ajouter Département
           </button>
         )}
       </div>

@@ -187,14 +187,14 @@ try {
     assert.strictEqual(res.status, 200);
     const subsystems = await res.json();
     assert.ok(Array.isArray(subsystems));
-    assert.ok(subsystems.length >= 6);
+    assert.ok(subsystems.length >= 5);
 
-    const pow = subsystems.find(s => s.code === 'POW');
-    assert.ok(pow, 'Powertrain subsystem should exist');
-    assert.ok(pow.budget_allocated > 0);
-    assert.ok(typeof pow.committed_cost === 'number');
-    assert.ok(typeof pow.actual_cost === 'number');
-    assert.ok(typeof pow.remaining_budget === 'number');
+    const ele = subsystems.find(s => s.code === 'ELE');
+    assert.ok(ele, 'Team Électrique subsystem should exist');
+    assert.ok(ele.budget_allocated > 0);
+    assert.ok(typeof ele.committed_cost === 'number');
+    assert.ok(typeof ele.actual_cost === 'number');
+    assert.ok(typeof ele.remaining_budget === 'number');
   });
 
   await test('T2-SUBSYSTEMS-02: POST /api/subsystems RBAC (Admin only)', async () => {

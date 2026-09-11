@@ -67,6 +67,34 @@ export const MCMASTER_PATTERNS = [
   }
 ];
 
+export const LCSC_PATTERNS = [
+  // LCSC product detail URL: /product-detail/{category}_{mfg}-{mpn}_{sku}.html or /product-detail/{sku}.html
+  {
+    regex: /lcsc\.com\/(?:.*_)?(C[0-9]+)(?:\.html)?(?:\?|#|$)/i,
+    extract: (m) => ({
+      supplier: 'LCSC',
+      manufacturer: 'LCSC',
+      mpn: m[1].toUpperCase().trim(),
+      sku: m[1].toUpperCase().trim(),
+      recognized: true
+    })
+  }
+];
+
+export const JLCPCB_PATTERNS = [
+  // JLCPCB part search or component cart: searchTxt=C12345 or /parts/detail/{sku}
+  {
+    regex: /jlcpcb\.com\/.*(?:searchTxt=|\/)(C[0-9]+|[0-9A-Za-z_-]{4,})/i,
+    extract: (m) => ({
+      supplier: 'JLCPCB',
+      manufacturer: 'JLCPCB',
+      mpn: m[1].toUpperCase().trim(),
+      sku: m[1].toUpperCase().trim(),
+      recognized: true
+    })
+  }
+];
+
 /**
  * Unified Parser extracting vendor metadata from a URL string.
  * @param {string} inputUrl
@@ -110,6 +138,18 @@ export function parseVendorUrl(inputUrl) {
 
   // 3. Check McMaster-Carr
   for (const p of MCMASTER_PATTERNS) {
+    const match = trimmed.match(p.regex);
+    if (match) return { ...p.extract(match), originalUrl: trimmed };
+  }
+
+  // 4. Check LCSC
+  for (const p of LCSC_PATTERNS) {
+    const match = trimmed.match(p.regex);
+    if (match) return { ...p.extract(match), originalUrl: trimmed };
+  }
+
+  // 5. Check JLCPCB
+  for (const p of JLCPCB_PATTERNS) {
     const match = trimmed.match(p.regex);
     if (match) return { ...p.extract(match), originalUrl: trimmed };
   }

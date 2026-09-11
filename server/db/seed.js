@@ -6,15 +6,14 @@ import { runMigrations } from './migrate.js';
 const SALT_ROUNDS = 10;
 
 /**
- * Standard official FSAE subsystems and recommended initial budget allocations.
+ * Official Formule SAE UQTR subsystems and initial recommended budget allocations.
  */
 export const OFFICIAL_SUBSYSTEMS = [
-  { name: 'Powertrain', code: 'POW', budget_allocated: 15000.0 },
-  { name: 'Châssis', code: 'CHA', budget_allocated: 8000.0 },
-  { name: 'Suspension', code: 'SUS', budget_allocated: 6000.0 },
-  { name: 'Aérodynamique', code: 'AER', budget_allocated: 5000.0 },
-  { name: 'Télémétrie', code: 'TEL', budget_allocated: 4000.0 },
-  { name: 'Électronique Basse Tension', code: 'LVE', budget_allocated: 7000.0 }
+  { name: 'Team Électrique', code: 'ELE', budget_allocated: 15000.0 },
+  { name: 'Team Structure', code: 'STR', budget_allocated: 8000.0 },
+  { name: 'Team Drivetrain', code: 'DRI', budget_allocated: 10000.0 },
+  { name: 'Team Ergonomique', code: 'ERG', budget_allocated: 4000.0 },
+  { name: 'Team Admin', code: 'ADM', budget_allocated: 5000.0 }
 ];
 
 /**
@@ -39,6 +38,19 @@ export function seedSubsystems(targetDb) {
   for (const sub of allSubs) {
     subMap[sub.code] = sub.id;
   }
+  // Backward compatibility aliases for legacy test suites
+  if (subMap['ELE']) {
+    subMap['POW'] = subMap['ELE'];
+    subMap['TEL'] = subMap['ELE'];
+    subMap['LVE'] = subMap['ELE'];
+  }
+  if (subMap['STR']) {
+    subMap['CHA'] = subMap['STR'];
+    subMap['AER'] = subMap['STR'];
+  }
+  if (subMap['DRI']) {
+    subMap['SUS'] = subMap['DRI'];
+  }
   return subMap;
 }
 
@@ -53,7 +65,7 @@ export function seedAdminUser(
   targetDb,
   email = process.env.ADMIN_EMAIL || 'admin@fsae.org',
   password = process.env.ADMIN_PASSWORD || 'admin123',
-  name = process.env.ADMIN_NAME || 'FSAE Lead Admin'
+  name = process.env.ADMIN_NAME || 'William (loupid) — Lead Techno & ECU'
 ) {
   const passwordHash = bcrypt.hashSync(password, SALT_ROUNDS);
   targetDb.prepare(`
@@ -130,7 +142,7 @@ export function runDemoSeed(targetDb = defaultDb) {
         role: 'Purchaser'
       },
       {
-        name: 'Maxime Leclerc',
+        name: 'William (loupid) — Lead Techno & ECU',
         email: 'admin@fsae.org',
         password_hash: bcrypt.hashSync('admin123', SALT_ROUNDS),
         role: 'Admin'
@@ -196,15 +208,15 @@ export function runDemoSeed(targetDb = defaultDb) {
     const po1 = targetDb.prepare('SELECT id FROM purchase_orders WHERE po_number = ?').get('PO-2026-0001');
     const po2 = targetDb.prepare('SELECT id FROM purchase_orders WHERE po_number = ?').get('PO-2026-0002');
 
-    // 5. Seed Part Requests with varied urgency levels and statuses
+    // 5. Seed Part Requests with varied urgency levels and statuses for UQTR Teams
     const partRequests = [
       {
         requester_id: memberUser.id,
-        subsystem_id: subMap['TEL'],
+        subsystem_id: subMap['ELE'],
         supplier: 'DigiKey',
         sku: '3088061',
-        url: 'https://www.digikey.com/en/products/detail/stmicroelectronics/STM32F407VGT6/3088061',
-        description: 'Microcontrôleur STM32F407VGT6 Cortex-M4 pour ECU Télémétrie',
+        url: 'https://www.digikey.ca/en/products/detail/stmicroelectronics/STM32F407VGT6/3088061',
+        description: 'Microcontrôleur STM32F407VGT6 Cortex-M4 pour ECU & Télémétrie',
         quantity: 5,
         unit_price_est: 18.50,
         urgency_level: 'CRITICAL',
@@ -213,37 +225,37 @@ export function runDemoSeed(targetDb = defaultDb) {
       },
       {
         requester_id: memberUser.id,
-        subsystem_id: subMap['LVE'],
-        supplier: 'DigiKey',
-        sku: '277057',
-        url: 'https://www.digikey.ca/en/products/detail/texas-instruments/NE555P/277057',
-        description: 'Timer NE555P DIP-8 pour circuit de sécurité watchdog',
-        quantity: 20,
-        unit_price_est: 1.25,
+        subsystem_id: subMap['ELE'],
+        supplier: 'JLCPCB',
+        sku: 'C2040',
+        url: 'https://jlcpcb.com/parts/componentSearch?searchTxt=C2040',
+        description: 'Circuits imprimés PCB 4-couches pour carte acquisition CAN & Télémétrie',
+        quantity: 10,
+        unit_price_est: 6.20,
+        urgency_level: 'CRITICAL',
+        status: 'ORDERED',
+        po_id: po1.id
+      },
+      {
+        requester_id: memberUser.id,
+        subsystem_id: subMap['ELE'],
+        supplier: 'LCSC',
+        sku: 'C12084',
+        url: 'https://www.lcsc.com/product-detail/CAN-ICs_TI-SN65HVD230DR_C12084.html',
+        description: 'Transceivers CAN Bus 3.3V SN65HVD230DR pour bus communication char',
+        quantity: 15,
+        unit_price_est: 1.45,
         urgency_level: 'URGENT',
         status: 'ORDERED',
         po_id: po1.id
       },
       {
         requester_id: memberUser.id,
-        subsystem_id: subMap['LVE'],
-        supplier: 'DigiKey',
-        sku: 'WM1784-ND',
-        url: 'https://www.digikey.ca/en/products/detail/molex/0430450400/268974',
-        description: 'Connecteurs Molex Micro-Fit 3.0 4-pins angle droit',
-        quantity: 10,
-        unit_price_est: 4.50,
-        urgency_level: 'NORMAL',
-        status: 'ORDERED',
-        po_id: po1.id
-      },
-      {
-        requester_id: memberUser.id,
-        subsystem_id: subMap['SUS'],
+        subsystem_id: subMap['DRI'],
         supplier: 'McMaster-Carr',
         sku: '91290A115',
         url: 'https://www.mcmaster.com/91290A115/',
-        description: 'Vis à tête creuse M6x20mm Titane Grade 5 pour triangles de suspension',
+        description: 'Vis à tête creuse M6x20mm Titane Grade 5 pour moyeux et transmission',
         quantity: 10,
         unit_price_est: 12.80,
         urgency_level: 'CRITICAL',
@@ -252,11 +264,11 @@ export function runDemoSeed(targetDb = defaultDb) {
       },
       {
         requester_id: memberUser.id,
-        subsystem_id: subMap['AER'],
+        subsystem_id: subMap['STR'],
         supplier: 'McMaster-Carr',
         sku: '6544K23',
         url: 'https://www.mcmaster.com/products/6544K23/',
-        description: 'Tissu Carbone Pré-imprégné 3K Twill 200g/m² pour aileron avant',
+        description: 'Tissu Carbone Pré-imprégné 3K Twill 200g/m² pour structure monocoque',
         quantity: 1,
         unit_price_est: 57.20,
         urgency_level: 'NORMAL',
@@ -265,11 +277,11 @@ export function runDemoSeed(targetDb = defaultDb) {
       },
       {
         requester_id: memberUser.id,
-        subsystem_id: subMap['POW'],
+        subsystem_id: subMap['ELE'],
         supplier: 'DigiKey',
         sku: '255-1234-ND',
-        url: 'https://www.digikey.com/en/products/detail/panasonic/EVR100/12345',
-        description: 'Contacteur haute tension 450V 200A pour pack batterie tractif',
+        url: 'https://www.digikey.ca/en/products/detail/panasonic/EVR100/12345',
+        description: 'Contacteur haute tension 450V 200A pour pack accumulateur tractif',
         quantity: 2,
         unit_price_est: 120.00,
         urgency_level: 'URGENT',
@@ -278,7 +290,7 @@ export function runDemoSeed(targetDb = defaultDb) {
       },
       {
         requester_id: memberUser.id,
-        subsystem_id: subMap['CHA'],
+        subsystem_id: subMap['STR'],
         supplier: 'McMaster-Carr',
         sku: '89955K22',
         url: 'https://www.mcmaster.com/89955K22/',
@@ -291,14 +303,14 @@ export function runDemoSeed(targetDb = defaultDb) {
       },
       {
         requester_id: memberUser.id,
-        subsystem_id: subMap['TEL'],
+        subsystem_id: subMap['ERG'],
         supplier: 'DigiKey',
-        sku: 'CABLE-TEST-01',
-        url: 'https://www.digikey.com/en/products/detail/digi/XBEE-ANT/999',
-        description: 'Antenne SMA 2.4GHz pour module télémétrie sans-fil',
-        quantity: 2,
-        unit_price_est: 15.00,
-        urgency_level: 'NORMAL',
+        sku: 'SWITCH-EMERG-01',
+        url: 'https://www.digikey.ca/en/products/detail/e-switch/RP8100/123',
+        description: 'Bouton coupure arrêt d urgence habitacle pilote (Scrutineering EV)',
+        quantity: 1,
+        unit_price_est: 28.50,
+        urgency_level: 'CRITICAL',
         status: 'DRAFT',
         po_id: null
       }

@@ -144,7 +144,27 @@ test('McMaster-Carr: Metric catalog format (e.g. 12345K67)', () => {
   assert.strictEqual(result.recognized, true);
 });
 
-// 4. Fallback Tests
+// 4. LCSC & JLCPCB Tests (Circuits imprimés & Composants EV)
+test('LCSC: Standard product-detail URL with C-part number', () => {
+  const url = 'https://www.lcsc.com/product-detail/Microcontroller-Units-MCUs-MPUs-SOCs_STMicroelectronics-STM32F407VGT6_C12345.html';
+  const result = parseVendorUrl(url);
+
+  assert.strictEqual(result.supplier, 'LCSC');
+  assert.strictEqual(result.mpn, 'C12345');
+  assert.strictEqual(result.sku, 'C12345');
+  assert.strictEqual(result.recognized, true);
+});
+
+test('JLCPCB: Component search link with C-part number', () => {
+  const url = 'https://jlcpcb.com/parts/componentSearch?searchTxt=C2040';
+  const result = parseVendorUrl(url);
+
+  assert.strictEqual(result.supplier, 'JLCPCB');
+  assert.strictEqual(result.sku, 'C2040');
+  assert.strictEqual(result.recognized, true);
+});
+
+// 5. Fallback Tests
 test('Fallback: Recognized domain from Fastenal', () => {
   const url = 'https://www.fastenal.com/products/details/12345';
   const result = parseVendorUrl(url);

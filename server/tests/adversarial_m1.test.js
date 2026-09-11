@@ -19,7 +19,7 @@ if (!isMainThread) {
 
   try {
     const member = workerDb.prepare('SELECT id FROM users WHERE email = ?').get('member@fsae.org');
-    const powSub = workerDb.prepare('SELECT id FROM subsystems WHERE code = ?').get('POW');
+    const powSub = workerDb.prepare('SELECT id FROM subsystems WHERE code = ?').get('ELE');
 
     const insertStmt = workerDb.prepare(`
       INSERT INTO part_requests (requester_id, subsystem_id, supplier, sku, description, quantity, unit_price_est, urgency_level, status)
@@ -167,7 +167,7 @@ if (!isMainThread) {
   });
 
   runTest('FK-07: Prevent deletion of subsystem referenced by existing part_requests (ON DELETE RESTRICT)', () => {
-    const pow = db.prepare('SELECT id FROM subsystems WHERE code = ?').get('POW');
+    const pow = db.prepare('SELECT id FROM subsystems WHERE code = ?').get('ELE');
     assert.throws(() => {
       db.prepare('DELETE FROM subsystems WHERE id = ?').run(pow.id);
     }, /FOREIGN KEY constraint failed/i);
@@ -178,7 +178,7 @@ if (!isMainThread) {
 
   runTest('CHECK-01: Reject invalid urgency levels (EXTREME, normal, CRITIQUE, SuperUrgent, empty string)', () => {
     const member = db.prepare('SELECT id FROM users WHERE email = ?').get('member@fsae.org');
-    const pow = db.prepare('SELECT id FROM subsystems WHERE code = ?').get('POW');
+    const pow = db.prepare('SELECT id FROM subsystems WHERE code = ?').get('ELE');
 
     const invalidUrgencies = ['EXTREME', 'normal', 'urgent', 'critical', 'CRITIQUE', 'SuperUrgent', '', 'URGENT_NOW'];
     for (const badUrgency of invalidUrgencies) {
@@ -205,7 +205,7 @@ if (!isMainThread) {
 
   runTest('CHECK-03: Reject negative price (unit_price_est < 0) and negative invoice amount (amount < 0)', () => {
     const member = db.prepare('SELECT id FROM users WHERE email = ?').get('member@fsae.org');
-    const pow = db.prepare('SELECT id FROM subsystems WHERE code = ?').get('POW');
+    const pow = db.prepare('SELECT id FROM subsystems WHERE code = ?').get('ELE');
     const po = db.prepare('SELECT id FROM purchase_orders LIMIT 1').get();
 
     // Negative unit price
@@ -234,7 +234,7 @@ if (!isMainThread) {
 
   runTest('CHECK-04: Reject negative or zero quantity (quantity <= 0)', () => {
     const member = db.prepare('SELECT id FROM users WHERE email = ?').get('member@fsae.org');
-    const pow = db.prepare('SELECT id FROM subsystems WHERE code = ?').get('POW');
+    const pow = db.prepare('SELECT id FROM subsystems WHERE code = ?').get('ELE');
 
     // Zero quantity
     assert.throws(() => {
@@ -282,7 +282,7 @@ if (!isMainThread) {
   runTest('CHECK-07: Reject invalid status transitions / enum values on purchase_orders and part_requests', () => {
     const purchaser = db.prepare('SELECT id FROM users WHERE email = ?').get('purchaser@fsae.org');
     const member = db.prepare('SELECT id FROM users WHERE email = ?').get('member@fsae.org');
-    const pow = db.prepare('SELECT id FROM subsystems WHERE code = ?').get('POW');
+    const pow = db.prepare('SELECT id FROM subsystems WHERE code = ?').get('ELE');
 
     // Invalid PO status
     assert.throws(() => {
@@ -322,7 +322,7 @@ if (!isMainThread) {
     assert.throws(() => {
       db.prepare(`
         INSERT INTO subsystems (name, code, budget_allocated)
-        VALUES ('Powertrain 2', 'POW', 1000.0)
+        VALUES ('Powertrain 2', 'ELE', 1000.0)
       `).run();
     }, /UNIQUE constraint failed/i);
   });
@@ -343,7 +343,7 @@ if (!isMainThread) {
 
   runTest('TX-01: Transaction rolls back cleanly on error without partial insertions', () => {
     const member = db.prepare('SELECT id FROM users WHERE email = ?').get('member@fsae.org');
-    const pow = db.prepare('SELECT id FROM subsystems WHERE code = ?').get('POW');
+    const pow = db.prepare('SELECT id FROM subsystems WHERE code = ?').get('ELE');
 
     const countBefore = db.prepare('SELECT count(*) as total FROM part_requests').get().total;
 

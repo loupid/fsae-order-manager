@@ -46,6 +46,20 @@ export default function PartRequestModal({ isOpen, onClose, onCreated, subsystem
           setSku(mcmMatch[1]);
           setParseSuccess(true);
         }
+      } else if (/lcsc\.com/i.test(u)) {
+        setSupplier('LCSC');
+        const lcscMatch = u.match(/(?:product-detail\/.*_)?(C[0-9]+)/i) || u.match(/(C[0-9]+)/i);
+        if (lcscMatch && lcscMatch[1]) {
+          setSku(lcscMatch[1].toUpperCase());
+          setParseSuccess(true);
+        }
+      } else if (/jlcpcb\.com/i.test(u)) {
+        setSupplier('JLCPCB');
+        const jlcMatch = u.match(/searchTxt=(C[0-9]+)/i) || u.match(/(C[0-9]+)/i);
+        if (jlcMatch && jlcMatch[1]) {
+          setSku(jlcMatch[1].toUpperCase());
+          setParseSuccess(true);
+        }
       }
     } catch (e) {
       // client extraction silent catch

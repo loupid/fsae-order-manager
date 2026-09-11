@@ -32,28 +32,29 @@ export default function Navbar({ activeTab, onTabChange }) {
     }}>
       {/* Brand */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
           <div style={{
-            width: '34px',
-            height: '34px',
-            borderRadius: '8px',
-            background: 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)',
+            width: '36px',
+            height: '36px',
+            borderRadius: '9px',
+            background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             fontWeight: '900',
             color: '#fff',
-            fontSize: '1.1rem',
-            boxShadow: '0 0 12px rgba(239, 68, 68, 0.4)'
+            fontSize: '1.15rem',
+            boxShadow: '0 0 14px rgba(16, 185, 129, 0.45)',
+            border: '1px solid #10b981'
           }}>
             ⚡
           </div>
           <div>
             <div style={{ fontWeight: '800', fontSize: '1.05rem', letterSpacing: '-0.02em', color: '#f8fafc' }}>
-              FSAE <span style={{ color: '#ef4444' }}>LOGISTICS</span>
+              FORMULE SAE <span style={{ color: '#10b981' }}>UQTR</span>
             </div>
-            <div style={{ fontSize: '0.68rem', color: '#94a3b8', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-              Order & Supply Manager
+            <div style={{ fontSize: '0.68rem', color: '#fb923c', letterSpacing: '0.04em', textTransform: 'uppercase', fontWeight: '700' }}>
+              Monoplace Électrique • Logistique
             </div>
           </div>
         </div>

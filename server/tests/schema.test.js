@@ -63,7 +63,7 @@ test('T1-SCHEMA-02: Pragmas enforce foreign keys and WAL mode', () => {
 test('T1-SCHEMA-03: Seed script populates demo data correctly', () => {
   const seedResult = runSeed(testDb);
   assert.equal(seedResult.usersCount, 3);
-  assert.equal(seedResult.subsystemsCount, 6);
+  assert.equal(seedResult.subsystemsCount, 5);
   assert.equal(seedResult.purchaseOrdersCount, 2);
   assert.equal(seedResult.partRequestsCount, 8);
   assert.equal(seedResult.invoicesCount, 2);
@@ -74,14 +74,14 @@ test('T1-SCHEMA-03b: Seed script is strictly idempotent across consecutive execu
   assert.doesNotThrow(() => {
     const run1 = runSeed(testDb);
     assert.equal(run1.usersCount, 3);
-    assert.equal(run1.subsystemsCount, 6);
+    assert.equal(run1.subsystemsCount, 5);
     assert.equal(run1.purchaseOrdersCount, 2);
     assert.equal(run1.partRequestsCount, 8);
     assert.equal(run1.invoicesCount, 2);
 
     const run2 = runSeed(testDb);
     assert.equal(run2.usersCount, 3);
-    assert.equal(run2.subsystemsCount, 6);
+    assert.equal(run2.subsystemsCount, 5);
     assert.equal(run2.purchaseOrdersCount, 2);
     assert.equal(run2.partRequestsCount, 8);
     assert.equal(run2.invoicesCount, 2);
@@ -95,7 +95,7 @@ test('T1-SCHEMA-03b: Seed script is strictly idempotent across consecutive execu
   const dbInvoices = testDb.prepare('SELECT COUNT(*) as c FROM invoices').get().c;
 
   assert.equal(dbUsers, 3, 'Users count must remain exactly 3');
-  assert.equal(dbSubsystems, 6, 'Subsystems count must remain exactly 6');
+  assert.equal(dbSubsystems, 5, 'Subsystems count must remain exactly 5');
   assert.equal(dbPOs, 2, 'Purchase Orders count must remain exactly 2');
   assert.equal(dbReqs, 8, 'Part Requests count must remain exactly 8');
   assert.equal(dbInvoices, 2, 'Invoices count must remain exactly 2');
@@ -121,7 +121,7 @@ test('T1-AUTH-01: Demo user passwords match Bcrypt hashes with 10 salt rounds', 
 test('T1-SCHEMA-04: Subsystems seeded with valid codes and allocated budgets', () => {
   const subs = testDb.prepare('SELECT code, budget_allocated FROM subsystems ORDER BY code').all();
   const subCodes = subs.map(s => s.code);
-  const expectedCodes = ['AER', 'CHA', 'LVE', 'POW', 'SUS', 'TEL'];
+  const expectedCodes = ['ADM', 'DRI', 'ELE', 'ERG', 'STR'];
   assert.deepEqual(subCodes.sort(), expectedCodes.sort());
 
   for (const s of subs) {
@@ -132,14 +132,14 @@ test('T1-SCHEMA-04: Subsystems seeded with valid codes and allocated budgets', (
 // TEST 6: Urgency Level & Status Check Constraints on Part Requests
 test('T1-SCHEMA-05: Urgency level CHECK constraint strictly enforces NORMAL, URGENT, CRITICAL', () => {
   const member = testDb.prepare('SELECT id FROM users WHERE email = ?').get('member@fsae.org');
-  const powSub = testDb.prepare('SELECT id FROM subsystems WHERE code = ?').get('POW');
+  const eleSub = testDb.prepare('SELECT id FROM subsystems WHERE code = ?').get('ELE');
 
   // Valid insertion with CRITICAL
   const insertValid = testDb.prepare(`
     INSERT INTO part_requests (requester_id, subsystem_id, supplier, sku, description, quantity, unit_price_est, urgency_level)
     VALUES (?, ?, 'DigiKey', 'TEST-SKU-1', 'Critical Relay', 1, 10.0, 'CRITICAL')
   `);
-  const info = insertValid.run(member.id, powSub.id);
+  const info = insertValid.run(member.id, eleSub.id);
   assert.ok(info.lastInsertRowid > 0);
 
   // Invalid urgency level should throw CHECK constraint error
@@ -147,7 +147,7 @@ test('T1-SCHEMA-05: Urgency level CHECK constraint strictly enforces NORMAL, URG
     testDb.prepare(`
       INSERT INTO part_requests (requester_id, subsystem_id, supplier, sku, description, quantity, unit_price_est, urgency_level)
       VALUES (?, ?, 'DigiKey', 'TEST-SKU-2', 'Invalid Urgency Item', 1, 10.0, 'SUPER_CRITICAL')
-    `).run(member.id, powSub.id);
+    `).run(member.id, eleSub.id);
   }, /CHECK constraint failed/i);
 });
 
@@ -190,7 +190,7 @@ test('T1-SCHEMA-08: Unique constraints prevent duplicate user emails and subsyst
   assert.throws(() => {
     testDb.prepare(`
       INSERT INTO subsystems (name, code, budget_allocated)
-      VALUES ('Powertrain Duplicate', 'POW', 5000.0)
+      VALUES ('Electrique Duplicate', 'ELE', 5000.0)
     `).run();
   }, /UNIQUE constraint failed/i);
 });
@@ -199,7 +199,7 @@ test('T1-SCHEMA-08: Unique constraints prevent duplicate user emails and subsyst
 test('T1-SCHEMA-09: PO deletion cascades to Invoices and sets PartRequests po_id to NULL', () => {
   const member = testDb.prepare('SELECT id FROM users WHERE email = ?').get('member@fsae.org');
   const purchaser = testDb.prepare('SELECT id FROM users WHERE email = ?').get('purchaser@fsae.org');
-  const chaSub = testDb.prepare('SELECT id FROM subsystems WHERE code = ?').get('CHA');
+  const strSub = testDb.prepare('SELECT id FROM subsystems WHERE code = ?').get('STR');
 
   // Create dedicated PO
   const poInfo = testDb.prepare(`
@@ -212,7 +212,7 @@ test('T1-SCHEMA-09: PO deletion cascades to Invoices and sets PartRequests po_id
   const reqInfo = testDb.prepare(`
     INSERT INTO part_requests (requester_id, subsystem_id, supplier, sku, description, quantity, unit_price_est, po_id)
     VALUES (?, ?, 'Mouser', 'CASCADE-SKU', 'Cascade Test Part', 1, 50.0, ?)
-  `).run(member.id, chaSub.id, poId);
+  `).run(member.id, strSub.id, poId);
   const reqId = reqInfo.lastInsertRowid;
 
   // Create linked Invoice
@@ -239,7 +239,7 @@ test('T1-SCHEMA-09: PO deletion cascades to Invoices and sets PartRequests po_id
 test('T1-SCHEMA-10: Status check constraints enforce valid state machines', () => {
   const purchaser = testDb.prepare('SELECT id FROM users WHERE email = ?').get('purchaser@fsae.org');
   const member = testDb.prepare('SELECT id FROM users WHERE email = ?').get('member@fsae.org');
-  const chaSub = testDb.prepare('SELECT id FROM subsystems WHERE code = ?').get('CHA');
+  const strSub = testDb.prepare('SELECT id FROM subsystems WHERE code = ?').get('STR');
 
   // Invalid PO status
   assert.throws(() => {
@@ -254,7 +254,7 @@ test('T1-SCHEMA-10: Status check constraints enforce valid state machines', () =
     testDb.prepare(`
       INSERT INTO part_requests (requester_id, subsystem_id, supplier, sku, description, status)
       VALUES (?, ?, 'DigiKey', 'SKU-X', 'Test', 'LOST')
-    `).run(member.id, chaSub.id);
+    `).run(member.id, strSub.id);
   }, /CHECK constraint failed/i);
 });
 
