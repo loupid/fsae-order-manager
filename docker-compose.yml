@@ -17,7 +17,7 @@ services:
       - DB_PATH=/app/data/fsae_orders.db
       - JWT_SECRET=fsae-raspberry-pi-jwt-secret-key-2026
       - JWT_EXPIRES_IN=7d
-      - NODE_OPTIONS=--max-old-space-size=128 --optimize-for-size
+      - NODE_OPTIONS=--max-old-space-size=128
       # Renseignez ici l'URL de votre Webhook Discord pour recevoir les alertes en direct
       - DISCORD_WEBHOOK_URL=
     volumes:

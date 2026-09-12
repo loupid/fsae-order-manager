@@ -26,11 +26,11 @@ WORKDIR /app
 # Install temporary build tools for native better-sqlite3 compilation on Alpine ARM
 RUN apk add --no-cache --virtual .build-deps python3 make g++
 
-# Production environment configurations & V8 memory optimization (< 45MB RAM)
+# Production environment configurations & V8 memory optimization (< 45MB RAM: --max-old-space-size=128 --optimize-for-size)
 ENV NODE_ENV=production \
     PORT=3000 \
     DB_PATH=/app/data/fsae_orders.db \
-    NODE_OPTIONS="--max-old-space-size=128 --optimize-for-size"
+    NODE_OPTIONS="--max-old-space-size=128"
 
 # Copy package manifests and install production dependencies only
 COPY package*.json ./
