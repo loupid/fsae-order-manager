@@ -13,13 +13,13 @@ services:
       - "8080:3000"
     environment:
       - PORT=3000
-      - NODE_ENV=production
-      - DB_PATH=/app/data/fsae_orders.db
-      - JWT_SECRET=fsae-raspberry-pi-jwt-secret-key-2026
+      - NODE_ENV=${NODE_ENV:-production}
+      - DB_PATH=${DB_PATH:-/app/data/fsae_orders.db}
+      - JWT_SECRET=${JWT_SECRET:-fsae-raspberry-pi-jwt-secret-key-2026}
       - JWT_EXPIRES_IN=7d
       - NODE_OPTIONS=--max-old-space-size=128
       # Renseignez ici l'URL de votre Webhook Discord pour recevoir les alertes en direct
-      - DISCORD_WEBHOOK_URL=
+      - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL:-}
     volumes:
       # Persistance de la base de données SQLite (WAL mode)
       - ./data:/app/data
@@ -37,3 +37,14 @@ services:
       timeout: 5s
       retries: 3
       start_period: 5s
+
+  # Service Cloudflare Tunnel optionnel (activable avec --profile tunnel ou CLOUDFLARE_TUNNEL_TOKEN)
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: fsae_cloudflared
+    restart: unless-stopped
+    command: tunnel run --token ${CLOUDFLARE_TUNNEL_TOKEN:-}
+    profiles:
+      - tunnel
+    depends_on:
+      - fsae-order-manager
