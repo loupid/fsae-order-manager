@@ -128,6 +128,8 @@ export default function PartRequestModal({ isOpen, onClose, onCreated, subsystem
     }
   };
 
+  if (!isOpen) return null;
+
   return (
     <div style={{
       position: 'fixed',
