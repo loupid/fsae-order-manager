@@ -6,6 +6,16 @@ import { generateToken, authenticateToken } from '../middleware/auth.js';
 export function createAuthRouter(db = defaultDb) {
   const router = Router();
 
+  // GET /api/auth/setup-status
+  router.get('/setup-status', (req, res) => {
+    try {
+      const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get().count;
+      return res.status(200).json({ isCleanInstall: userCount === 0, userCount });
+    } catch (err) {
+      return res.status(500).json({ error: 'Failed to get setup status: ' + err.message });
+    }
+  });
+
   // POST /api/auth/register
   router.post('/register', (req, res) => {
     try {
@@ -19,7 +29,9 @@ export function createAuthRouter(db = defaultDb) {
         return res.status(400).json({ error: 'Password must be at least 3 characters' });
       }
 
-      const assignedRole = ['Member', 'Purchaser', 'Admin'].includes(role) ? role : 'Member';
+      const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get().count;
+      const isFirstUser = userCount === 0;
+      const assignedRole = isFirstUser ? 'Admin' : (['Member', 'Purchaser', 'Admin'].includes(role) ? role : 'Member');
 
       const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email.trim().toLowerCase());
       if (existing) {

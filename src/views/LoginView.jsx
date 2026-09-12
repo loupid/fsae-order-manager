@@ -72,7 +72,20 @@ export default function LoginView() {
 
   // Mode: false = Connexion classique, true = Questionnaire d'intégration UQTR
   const [isRegisterMode, setIsRegisterMode] = useState(false);
+  const [isCleanInstall, setIsCleanInstall] = useState(false);
   const [step, setStep] = useState(1); // 1, 2, 3
+
+  React.useEffect(() => {
+    fetch('/api/auth/setup-status')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.isCleanInstall) {
+          setIsCleanInstall(true);
+          setIsRegisterMode(true);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Champs du formulaire & questionnaire
   const [email, setEmail] = useState('');
@@ -246,6 +259,32 @@ export default function LoginView() {
                 }} />
               </div>
             </div>
+
+            {/* Notification Première Installation / Base Propre */}
+            {isCleanInstall && (
+              <div style={{
+                padding: '0.75rem 0.9rem',
+                backgroundColor: '#78350f22',
+                border: '1px solid #f59e0b',
+                borderRadius: '8px',
+                color: '#fef3c7',
+                fontSize: '0.8rem',
+                marginBottom: '1rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.65rem'
+              }}>
+                <span style={{ fontSize: '1.35rem' }}>👑</span>
+                <div>
+                  <div style={{ fontWeight: '800', color: '#fbbf24', fontSize: '0.84rem' }}>
+                    Premier Compte : Administrateur Principal
+                  </div>
+                  <div style={{ fontSize: '0.74rem', color: '#fde68a' }}>
+                    Bienvenue ! La base est vierge : ce tout premier compte disposera des pleins privilèges d'administration de l'écurie.
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* ÉTAPE 1 : Identité & Courriel UQTR */}
             {step === 1 && (
@@ -633,22 +672,24 @@ export default function LoginView() {
             )}
 
             {/* Revenir à la connexion */}
-            <div style={{ textAlign: 'center', marginTop: '1.25rem' }}>
-              <button
-                type="button"
-                onClick={() => { setIsRegisterMode(false); setStep(1); setLocalError(''); }}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#94a3b8',
-                  fontSize: '0.82rem',
-                  cursor: 'pointer',
-                  textDecoration: 'underline'
-                }}
-              >
-                Déjà membre ? Se connecter avec son compte
-              </button>
-            </div>
+            {!isCleanInstall && (
+              <div style={{ textAlign: 'center', marginTop: '1.25rem' }}>
+                <button
+                  type="button"
+                  onClick={() => { setIsRegisterMode(false); setStep(1); setLocalError(''); }}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#94a3b8',
+                    fontSize: '0.82rem',
+                    cursor: 'pointer',
+                    textDecoration: 'underline'
+                  }}
+                >
+                  Déjà membre ? Se connecter avec son compte
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           /* ------------------------------------------------------------- */
@@ -687,68 +728,70 @@ export default function LoginView() {
               <ChevronRight style={{ width: '18px', height: '18px', color: '#10b981' }} />
             </div>
 
-            {/* Comptes Démo Rapides */}
-            <div style={{
-              backgroundColor: '#0b0d11',
-              border: '1px solid #1f242e',
-              borderRadius: '8px',
-              padding: '0.75rem',
-              marginBottom: '1.25rem'
-            }}>
-              <div style={{ fontSize: '0.72rem', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '0.4rem', letterSpacing: '0.04em' }}>
-                Comptes Démo Rapides :
+            {/* Comptes Démo Rapides (uniquement hors première installation propre) */}
+            {!isCleanInstall && (
+              <div style={{
+                backgroundColor: '#0b0d11',
+                border: '1px solid #1f242e',
+                borderRadius: '8px',
+                padding: '0.75rem',
+                marginBottom: '1.25rem'
+              }}>
+                <div style={{ fontSize: '0.72rem', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '0.4rem', letterSpacing: '0.04em' }}>
+                  Comptes Démo Rapides :
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.4rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => handleQuickPersona('member@fsae.org', 'member123')}
+                    style={{
+                      padding: '0.35rem 0.45rem',
+                      backgroundColor: '#1e293b',
+                      border: '1px solid #334155',
+                      borderRadius: '5px',
+                      color: '#cbd5e1',
+                      fontSize: '0.72rem',
+                      fontWeight: '600',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    👤 Alexandre (Élec)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleQuickPersona('purchaser@fsae.org', 'purchaser123')}
+                    style={{
+                      padding: '0.35rem 0.45rem',
+                      backgroundColor: '#1e3a8a',
+                      border: '1px solid #2563eb',
+                      borderRadius: '5px',
+                      color: '#93c5fd',
+                      fontSize: '0.72rem',
+                      fontWeight: '600',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    🛒 Sarah (Achats)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleQuickPersona('admin@fsae.org', 'admin123')}
+                    style={{
+                      padding: '0.35rem 0.45rem',
+                      backgroundColor: '#064e3b',
+                      border: '1px solid #059669',
+                      borderRadius: '5px',
+                      color: '#a7f3d0',
+                      fontSize: '0.72rem',
+                      fontWeight: '600',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    👑 William (ECU)
+                  </button>
+                </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.4rem' }}>
-                <button
-                  type="button"
-                  onClick={() => handleQuickPersona('member@fsae.org', 'member123')}
-                  style={{
-                    padding: '0.35rem 0.45rem',
-                    backgroundColor: '#1e293b',
-                    border: '1px solid #334155',
-                    borderRadius: '5px',
-                    color: '#cbd5e1',
-                    fontSize: '0.72rem',
-                    fontWeight: '600',
-                    cursor: 'pointer'
-                  }}
-                >
-                  👤 Alexandre (Élec)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickPersona('purchaser@fsae.org', 'purchaser123')}
-                  style={{
-                    padding: '0.35rem 0.45rem',
-                    backgroundColor: '#1e3a8a',
-                    border: '1px solid #2563eb',
-                    borderRadius: '5px',
-                    color: '#93c5fd',
-                    fontSize: '0.72rem',
-                    fontWeight: '600',
-                    cursor: 'pointer'
-                  }}
-                >
-                  🛒 Sarah (Achats)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickPersona('admin@fsae.org', 'admin123')}
-                  style={{
-                    padding: '0.35rem 0.45rem',
-                    backgroundColor: '#064e3b',
-                    border: '1px solid #059669',
-                    borderRadius: '5px',
-                    color: '#a7f3d0',
-                    fontSize: '0.72rem',
-                    fontWeight: '600',
-                    cursor: 'pointer'
-                  }}
-                >
-                  👑 William (ECU)
-                </button>
-              </div>
-            </div>
+            )}
 
             {/* Formulaire de Connexion */}
             <form onSubmit={handleFinalSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>

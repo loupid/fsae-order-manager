@@ -95,17 +95,16 @@ export function runProdSeed(targetDb = defaultDb) {
     console.log('🏭 [SEED:PROD] Initialisation de la base PRODUCTION réelle...');
 
     const subMap = seedSubsystems(targetDb);
-    const admin = seedAdminUser(targetDb);
 
-    console.log('✅ [SEED:PROD] Base de production prête :');
+    console.log('✅ [SEED:PROD] Base de production propre :');
     console.log(`  - Sous-systèmes officiels : ${OFFICIAL_SUBSYSTEMS.length}`);
-    console.log(`  - Compte Admin initial : ${admin.email}`);
+    console.log('  - Utilisateurs : 0 (Le premier utilisateur enregistré via le conteneur sera Administrateur)');
     console.log('  - Requêtes / Commandes : 0 (propre pour la vraie équipe)');
 
     return {
       mode: 'production',
       subsystemsCount: OFFICIAL_SUBSYSTEMS.length,
-      usersCount: 1,
+      usersCount: 0,
       partRequestsCount: 0,
       purchaseOrdersCount: 0,
       invoicesCount: 0
