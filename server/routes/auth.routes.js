@@ -9,14 +9,14 @@ export function createAuthRouter(db = defaultDb) {
   // POST /api/auth/register
   router.post('/register', (req, res) => {
     try {
-      const { name, email, password, role } = req.body;
+      const { name, email, password, role, department, subsystem, discord_handle, tshirt_size } = req.body;
 
       if (!name || !email || !password) {
         return res.status(400).json({ error: 'Name, email, and password are required' });
       }
 
-      if (password.length < 6) {
-        return res.status(400).json({ error: 'Password must be at least 6 characters' });
+      if (password.length < 3) {
+        return res.status(400).json({ error: 'Password must be at least 3 characters' });
       }
 
       const assignedRole = ['Member', 'Purchaser', 'Admin'].includes(role) ? role : 'Member';
@@ -28,15 +28,27 @@ export function createAuthRouter(db = defaultDb) {
 
       const password_hash = bcrypt.hashSync(password, 10);
       const result = db.prepare(`
-        INSERT INTO users (name, email, password_hash, role)
-        VALUES (?, ?, ?, ?)
-      `).run(name.trim(), email.trim().toLowerCase(), password_hash, assignedRole);
+        INSERT INTO users (name, email, password_hash, role, department, subsystem, discord_handle, tshirt_size)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        name.trim(),
+        email.trim().toLowerCase(),
+        password_hash,
+        assignedRole,
+        department ? department.trim() : null,
+        subsystem ? subsystem.trim() : null,
+        discord_handle ? discord_handle.trim() : null,
+        tshirt_size ? tshirt_size.trim() : null
+      );
 
       const user = {
         id: Number(result.lastInsertRowid),
         name: name.trim(),
         email: email.trim().toLowerCase(),
-        role: assignedRole
+        role: assignedRole,
+        department: department ? department.trim() : null,
+        subsystem: subsystem ? subsystem.trim() : null,
+        discord_handle: discord_handle ? discord_handle.trim() : null
       };
 
       const token = generateToken(user);
@@ -64,7 +76,10 @@ export function createAuthRouter(db = defaultDb) {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        department: user.department || null,
+        subsystem: user.subsystem || null,
+        discord_handle: user.discord_handle || null
       };
 
       const token = generateToken(safeUser);
@@ -77,7 +92,7 @@ export function createAuthRouter(db = defaultDb) {
   // GET /api/auth/me
   router.get('/me', authenticateToken, (req, res) => {
     try {
-      const user = db.prepare('SELECT id, name, email, role, created_at FROM users WHERE id = ?').get(req.user.id);
+      const user = db.prepare('SELECT id, name, email, role, department, subsystem, discord_handle, tshirt_size, created_at FROM users WHERE id = ?').get(req.user.id);
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
       }

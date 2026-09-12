@@ -8,6 +8,10 @@ CREATE TABLE IF NOT EXISTS users (
     email TEXT UNIQUE NOT NULL COLLATE NOCASE,
     password_hash TEXT NOT NULL,
     role TEXT CHECK(role IN ('Member', 'Purchaser', 'Admin')) NOT NULL DEFAULT 'Member',
+    department TEXT,
+    subsystem TEXT,
+    discord_handle TEXT,
+    tshirt_size TEXT,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 

@@ -53,10 +53,10 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const register = async (name, email, password, role) => {
+  const register = async (nameOrData, email, password, role, extra) => {
     setError(null);
     try {
-      const data = await apiClient.register(name, email, password, role);
+      const data = await apiClient.register(nameOrData, email, password, role, extra);
       setStoredToken(data.token);
       setUser(data.user);
       return data.user;

@@ -22,6 +22,20 @@ export function runMigrations(targetDb = defaultDb) {
   // Execute DDL schema inside a transaction
   targetDb.exec(schemaSql);
 
+  // Ensure non-breaking optional columns exist on existing databases
+  try {
+    const tableInfo = targetDb.prepare("PRAGMA table_info(users)").all();
+    const existingCols = tableInfo.map(col => col.name);
+    const needed = ['department', 'subsystem', 'discord_handle', 'tshirt_size'];
+    for (const col of needed) {
+      if (!existingCols.includes(col)) {
+        targetDb.exec(`ALTER TABLE users ADD COLUMN ${col} TEXT`);
+      }
+    }
+  } catch (e) {
+    // Ignore if table is being initialized
+  }
+
   const tables = targetDb
     .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name")
     .all()

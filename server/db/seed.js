@@ -133,29 +133,41 @@ export function runDemoSeed(targetDb = defaultDb) {
         name: 'Alexandre Tremblay',
         email: 'member@fsae.org',
         password_hash: bcrypt.hashSync('member123', SALT_ROUNDS),
-        role: 'Member'
+        role: 'Member',
+        department: 'ELE',
+        subsystem: 'Accumulateur & BMS',
+        discord_handle: 'alex_elec'
       },
       {
         name: 'Sarah Dubois',
         email: 'purchaser@fsae.org',
         password_hash: bcrypt.hashSync('purchaser123', SALT_ROUNDS),
-        role: 'Purchaser'
+        role: 'Purchaser',
+        department: 'ADM',
+        subsystem: 'Finances & Achats',
+        discord_handle: 'sarah_fsae'
       },
       {
         name: 'William (loupid) — Lead Techno & ECU',
         email: 'admin@fsae.org',
         password_hash: bcrypt.hashSync('admin123', SALT_ROUNDS),
-        role: 'Admin'
+        role: 'Admin',
+        department: 'ELE',
+        subsystem: 'Télémétrie & ECU',
+        discord_handle: 'loupid'
       }
     ];
 
     const insertUser = targetDb.prepare(`
-      INSERT INTO users (name, email, password_hash, role)
-      VALUES (@name, @email, @password_hash, @role)
+      INSERT INTO users (name, email, password_hash, role, department, subsystem, discord_handle)
+      VALUES (@name, @email, @password_hash, @role, @department, @subsystem, @discord_handle)
       ON CONFLICT(email) DO UPDATE SET
         name = excluded.name,
         password_hash = excluded.password_hash,
-        role = excluded.role
+        role = excluded.role,
+        department = excluded.department,
+        subsystem = excluded.subsystem,
+        discord_handle = excluded.discord_handle
     `);
 
     for (const u of users) {

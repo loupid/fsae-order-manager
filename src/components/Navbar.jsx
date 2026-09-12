@@ -135,6 +135,26 @@ export default function Navbar({ activeTab, onTabChange }) {
           <div style={{ fontSize: '0.72rem', color: '#64748b' }}>{user?.email}</div>
         </div>
 
+        {user?.department && (
+          <span
+            title={`Pôle : ${user.department}${user.subsystem ? ' • ' + user.subsystem : ''}`}
+            style={{
+              fontSize: '0.72rem',
+              fontWeight: '700',
+              padding: '0.2rem 0.55rem',
+              borderRadius: '6px',
+              backgroundColor: '#064e3b',
+              color: '#a7f3d0',
+              border: '1px solid #059669',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.25rem'
+            }}
+          >
+            ⚡ {user.department}
+          </span>
+        )}
+
         <span style={{
           fontSize: '0.72rem',
           fontWeight: '700',

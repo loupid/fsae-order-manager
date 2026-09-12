@@ -69,10 +69,15 @@ export const apiClient = {
     method: 'POST',
     body: JSON.stringify({ email, password })
   }),
-  register: (name, email, password, role) => request('/auth/register', {
-    method: 'POST',
-    body: JSON.stringify({ name, email, password, role })
-  }),
+  register: (nameOrData, email, password, role, extra = {}) => {
+    const payload = typeof nameOrData === 'object' && nameOrData !== null
+      ? nameOrData
+      : { name: nameOrData, email, password, role: role || 'Member', ...extra };
+    return request('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  },
   getMe: () => request('/auth/me'),
 
   // Subsystems
