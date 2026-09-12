@@ -102,12 +102,6 @@ export default function LoginView() {
   // Détection du courriel officiel UQTR
   const isUqtrEmail = email.trim().toLowerCase().endsWith('@uqtr.ca');
 
-  const handleQuickPersona = (pEmail, pPassword) => {
-    setEmail(pEmail);
-    setPassword(pPassword);
-    setLocalError('');
-  };
-
   const selectedDeptObj = UQTR_DEPARTMENTS.find(d => d.code === department) || UQTR_DEPARTMENTS[0];
 
   const handleNextStep = (e) => {
@@ -728,71 +722,6 @@ export default function LoginView() {
               <ChevronRight style={{ width: '18px', height: '18px', color: '#10b981' }} />
             </div>
 
-            {/* Comptes Démo Rapides (uniquement hors première installation propre) */}
-            {!isCleanInstall && (
-              <div style={{
-                backgroundColor: '#0b0d11',
-                border: '1px solid #1f242e',
-                borderRadius: '8px',
-                padding: '0.75rem',
-                marginBottom: '1.25rem'
-              }}>
-                <div style={{ fontSize: '0.72rem', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '0.4rem', letterSpacing: '0.04em' }}>
-                  Comptes Démo Rapides :
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.4rem' }}>
-                  <button
-                    type="button"
-                    onClick={() => handleQuickPersona('member@fsae.org', 'member123')}
-                    style={{
-                      padding: '0.35rem 0.45rem',
-                      backgroundColor: '#1e293b',
-                      border: '1px solid #334155',
-                      borderRadius: '5px',
-                      color: '#cbd5e1',
-                      fontSize: '0.72rem',
-                      fontWeight: '600',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    👤 Alexandre (Élec)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleQuickPersona('purchaser@fsae.org', 'purchaser123')}
-                    style={{
-                      padding: '0.35rem 0.45rem',
-                      backgroundColor: '#1e3a8a',
-                      border: '1px solid #2563eb',
-                      borderRadius: '5px',
-                      color: '#93c5fd',
-                      fontSize: '0.72rem',
-                      fontWeight: '600',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    🛒 Sarah (Achats)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleQuickPersona('admin@fsae.org', 'admin123')}
-                    style={{
-                      padding: '0.35rem 0.45rem',
-                      backgroundColor: '#064e3b',
-                      border: '1px solid #059669',
-                      borderRadius: '5px',
-                      color: '#a7f3d0',
-                      fontSize: '0.72rem',
-                      fontWeight: '600',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    👑 William (ECU)
-                  </button>
-                </div>
-              </div>
-            )}
-
             {/* Formulaire de Connexion */}
             <form onSubmit={handleFinalSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
@@ -806,7 +735,7 @@ export default function LoginView() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="prenom.nom@uqtr.ca ou admin@fsae.org"
+                    placeholder="prenom.nom@uqtr.ca"
                     style={{
                       width: '100%',
                       padding: '0.65rem 0.85rem 0.65rem 2.25rem',
