@@ -103,8 +103,8 @@ if (isDirectExecution) {
   const app = createApp(db);
   const PORT = process.env.PORT || 3000;
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🏎️  FSAE Order Manager Server [MODE: ${mode.toUpperCase()}] running on http://0.0.0.0:${PORT}`);
+  app.listen(PORT, '::', () => {
+    console.log(`🏎️  FSAE Order Manager Server [MODE: ${mode.toUpperCase()}] running on port ${PORT}`);
     console.log(`📁  Base de données active : ${getDbPath()}`);
   });
 }
