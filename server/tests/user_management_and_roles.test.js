@@ -299,7 +299,7 @@ try {
     const admData = await resAdmPatch.json();
     assert.equal(admData.budget_allocated, 18000.0);
 
-    // 6. Lead from Team Administration (ADM) succeeds on subsystem POST creation
+    // 6. Lead from Team Administration gets 403 on subsystem POST creation (Admin only)
     const resAdmPost = await fetch(`${baseUrl}/api/subsystems`, {
       method: 'POST',
       headers: {
@@ -308,8 +308,19 @@ try {
       },
       body: JSON.stringify({ name: 'Sub ADM New', code: 'SAN', budget_allocated: 2500 })
     });
-    assert.equal(resAdmPost.status, 201);
-    const newSubData = await resAdmPost.json();
+    assert.equal(resAdmPost.status, 403);
+
+    // 6b. Admin succeeds on subsystem POST creation
+    const resAdminPost = await fetch(`${baseUrl}/api/subsystems`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${admin1.token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ name: 'Sub ADM New', code: 'SAN', budget_allocated: 2500 })
+    });
+    assert.equal(resAdminPost.status, 201);
+    const newSubData = await resAdminPost.json();
     assert.equal(newSubData.code, 'SAN');
 
     // 7. Admin succeeds on budget update

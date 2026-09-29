@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { db as defaultDb } from '../db/database.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { authenticateToken, requireRole } from '../middleware/auth.js';
 
 export function createSubsystemsRouter(db = defaultDb) {
   const router = Router();
@@ -95,8 +95,8 @@ export function createSubsystemsRouter(db = defaultDb) {
     }
   });
 
-  // POST /api/subsystems — Create new subsystem (Admin & Team Administration Leads)
-  router.post('/', authenticateToken, requireBudgetAccess, (req, res) => {
+  // POST /api/subsystems — Create new subsystem (Admin only)
+  router.post('/', authenticateToken, requireRole('Admin'), (req, res) => {
     try {
       const { name, code, budget_allocated } = req.body;
 
