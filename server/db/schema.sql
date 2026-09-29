@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
     name TEXT NOT NULL,
     email TEXT UNIQUE NOT NULL COLLATE NOCASE,
     password_hash TEXT NOT NULL,
-    role TEXT CHECK(role IN ('Member', 'Purchaser', 'Admin')) NOT NULL DEFAULT 'Member',
+    role TEXT CHECK(role IN ('Member', 'Lead', 'Purchaser', 'Admin')) NOT NULL DEFAULT 'Member',
     department TEXT,
     subsystem TEXT,
     discord_handle TEXT,

@@ -31,7 +31,7 @@ export function createAuthRouter(db = defaultDb) {
 
       const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get().count;
       const isFirstUser = userCount === 0;
-      const assignedRole = isFirstUser ? 'Admin' : (['Member', 'Purchaser', 'Admin'].includes(role) ? role : 'Member');
+      const assignedRole = isFirstUser ? 'Admin' : (['Member', 'Lead', 'Purchaser', 'Admin'].includes(role) ? role : 'Member');
 
       const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email.trim().toLowerCase());
       if (existing) {
@@ -108,7 +108,7 @@ export function createAuthRouter(db = defaultDb) {
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
       }
-      return res.status(200).json({ user });
+      return res.status(200).json({ user, token: generateToken(user) });
     } catch (err) {
       return res.status(500).json({ error: 'Failed to fetch user profile: ' + err.message });
     }

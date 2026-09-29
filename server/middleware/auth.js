@@ -15,7 +15,9 @@ export function generateToken(user, expiresIn = JWT_EXPIRES_IN) {
       id: user.id,
       email: user.email,
       role: user.role,
-      name: user.name
+      name: user.name,
+      department: user.department || null,
+      subsystem: user.subsystem || null
     },
     JWT_SECRET,
     { expiresIn }

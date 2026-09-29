@@ -1,9 +1,52 @@
 import { Router } from 'express';
 import { db as defaultDb } from '../db/database.js';
-import { authenticateToken, requireRole } from '../middleware/auth.js';
+import { authenticateToken } from '../middleware/auth.js';
 
 export function createSubsystemsRouter(db = defaultDb) {
   const router = Router();
+
+  function canManageBudget(user, dbInstance) {
+    if (!user) return false;
+
+    let role = user.role;
+    let dept = user.department;
+    let sub = user.subsystem;
+
+    if (dbInstance && user.id) {
+      try {
+        const dbUser = dbInstance.prepare('SELECT role, department, subsystem FROM users WHERE id = ?').get(user.id);
+        if (dbUser) {
+          role = dbUser.role;
+          dept = dbUser.department;
+          sub = dbUser.subsystem;
+        }
+      } catch (err) {
+        // Fall back to token claims if DB query fails
+      }
+    }
+
+    if (role === 'Admin') return true;
+
+    if (role === 'Lead' || role === 'Purchaser') {
+      const normDept = (dept || '').trim().toUpperCase();
+      const normSub = (sub || '').trim().toUpperCase();
+      return normDept === 'TEAM ADMINISTRATION' || normDept === 'ADM' || normSub === 'TEAM ADMINISTRATION' || normSub === 'ADM';
+    }
+
+    return false;
+  }
+
+  const requireBudgetAccess = (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    if (!canManageBudget(req.user, db)) {
+      return res.status(403).json({
+        error: 'Forbidden: Budget access is restricted to Administrators and Team Administration Leads'
+      });
+    }
+    next();
+  };
 
   // GET /api/subsystems — List subsystems with financial aggregation
   router.get('/', authenticateToken, (req, res) => {
@@ -52,12 +95,12 @@ export function createSubsystemsRouter(db = defaultDb) {
     }
   });
 
-  // POST /api/subsystems — Create new subsystem (Admin only)
-  router.post('/', authenticateToken, requireRole('Admin'), (req, res) => {
+  // POST /api/subsystems — Create new subsystem (Admin & Team Administration Leads)
+  router.post('/', authenticateToken, requireBudgetAccess, (req, res) => {
     try {
       const { name, code, budget_allocated } = req.body;
 
-      if (!name || !code) {
+      if (!name || !code || !String(name).trim() || !String(code).trim()) {
         return res.status(400).json({ error: 'Subsystem name and code are required' });
       }
 
@@ -82,6 +125,38 @@ export function createSubsystemsRouter(db = defaultDb) {
       return res.status(201).json(created);
     } catch (err) {
       return res.status(500).json({ error: 'Failed to create subsystem: ' + err.message });
+    }
+  });
+
+  // PATCH /api/subsystems/:id/budget — Update allocated budget (Admin & Team Administration Leads)
+  router.patch('/:id/budget', authenticateToken, requireBudgetAccess, (req, res) => {
+    try {
+      const subId = Number(req.params.id);
+      if (!subId || isNaN(subId)) {
+        return res.status(400).json({ error: 'Invalid subsystem ID' });
+      }
+
+      const { budget_allocated } = req.body;
+      if (budget_allocated === undefined || budget_allocated === null || budget_allocated === '') {
+        return res.status(400).json({ error: 'budget_allocated is required' });
+      }
+
+      const budget = parseFloat(budget_allocated);
+      if (isNaN(budget) || budget < 0) {
+        return res.status(400).json({ error: 'Budget allocated must be >= 0' });
+      }
+
+      const sub = db.prepare('SELECT * FROM subsystems WHERE id = ?').get(subId);
+      if (!sub) {
+        return res.status(404).json({ error: 'Subsystem not found' });
+      }
+
+      db.prepare('UPDATE subsystems SET budget_allocated = ? WHERE id = ?').run(budget, subId);
+
+      const updated = db.prepare('SELECT * FROM subsystems WHERE id = ?').get(subId);
+      return res.status(200).json(updated);
+    } catch (err) {
+      return res.status(500).json({ error: 'Failed to update subsystem budget: ' + err.message });
     }
   });
 

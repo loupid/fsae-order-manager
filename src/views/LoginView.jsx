@@ -615,6 +615,58 @@ export default function LoginView() {
                   </div>
                 </div>
 
+                {/* Rôle au sein de l'écurie */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: '#cbd5e1', marginBottom: '0.35rem' }}>
+                    Rôle au sein de l'écurie *
+                  </label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                    <div
+                      onClick={() => setRole('Member')}
+                      style={{
+                        padding: '0.65rem 0.75rem',
+                        borderRadius: '8px',
+                        border: role === 'Member' ? '2px solid #10b981' : '1px solid #334155',
+                        backgroundColor: role === 'Member' ? '#064e3b33' : '#0f1115',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
+                        <span style={{ fontWeight: '700', fontSize: '0.85rem', color: role === 'Member' ? '#6ee7b7' : '#f8fafc' }}>
+                          Membre
+                        </span>
+                        {role === 'Member' && <CheckCircle2 style={{ width: '15px', height: '15px', color: '#10b981' }} />}
+                      </div>
+                      <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                        Demandes de pièces & suivi
+                      </div>
+                    </div>
+
+                    <div
+                      onClick={() => setRole('Lead')}
+                      style={{
+                        padding: '0.65rem 0.75rem',
+                        borderRadius: '8px',
+                        border: role === 'Lead' ? '2px solid #3b82f6' : '1px solid #334155',
+                        backgroundColor: role === 'Lead' ? '#1e3a8a33' : '#0f1115',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
+                        <span style={{ fontWeight: '700', fontSize: '0.85rem', color: role === 'Lead' ? '#93c5fd' : '#f8fafc' }}>
+                          Chef d'équipe
+                        </span>
+                        {role === 'Lead' && <CheckCircle2 style={{ width: '15px', height: '15px', color: '#3b82f6' }} />}
+                      </div>
+                      <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                        Commandes & budget de pôle
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
                   <button
                     type="button"

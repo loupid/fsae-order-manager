@@ -80,11 +80,25 @@ export const apiClient = {
   },
   getMe: () => request('/auth/me'),
 
-  // Subsystems
+  // Users Management (Admin only)
+  getUsers: () => request('/users'),
+  updateUser: (id, data) => request(`/users/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data)
+  }),
+  deleteUser: (id) => request(`/users/${id}`, {
+    method: 'DELETE'
+  }),
+
+  // Subsystems & Budgets
   getSubsystems: () => request('/subsystems'),
   createSubsystem: (subsystem) => request('/subsystems', {
     method: 'POST',
     body: JSON.stringify(subsystem)
+  }),
+  updateSubsystemBudget: (id, budget_allocated) => request(`/subsystems/${id}/budget`, {
+    method: 'PATCH',
+    body: JSON.stringify({ budget_allocated })
   }),
 
   // Part Requests

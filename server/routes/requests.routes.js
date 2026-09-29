@@ -159,8 +159,8 @@ export function createRequestsRouter(db = defaultDb) {
     }
   });
 
-  // PATCH /api/part-requests/:id/status — Status update (Purchaser/Admin)
-  router.patch('/:id/status', authenticateToken, requireRole(['Purchaser', 'Admin']), (req, res) => {
+  // PATCH /api/part-requests/:id/status — Status update (Lead/Purchaser/Admin)
+  router.patch('/:id/status', authenticateToken, requireRole(['Lead', 'Purchaser', 'Admin']), (req, res) => {
     try {
       const { status } = req.body;
       const validStatuses = ['DRAFT', 'SUBMITTED', 'APPROVED', 'ORDERED', 'RECEIVED', 'REJECTED'];

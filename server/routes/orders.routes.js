@@ -92,7 +92,7 @@ export function createOrdersRouter(db = defaultDb, customWebhookUrl) {
   });
 
   // POST /api/purchase-orders — 1-Click PO grouping & creation
-  router.post('/', authenticateToken, requireRole(['Purchaser', 'Admin']), (req, res) => {
+  router.post('/', authenticateToken, requireRole(['Lead', 'Purchaser', 'Admin']), (req, res) => {
     try {
       const { supplier, request_ids } = req.body;
 
@@ -169,7 +169,7 @@ export function createOrdersRouter(db = defaultDb, customWebhookUrl) {
   });
 
   // PATCH /api/purchase-orders/:id/status — Update PO Status
-  router.patch('/:id/status', authenticateToken, requireRole(['Purchaser', 'Admin']), (req, res) => {
+  router.patch('/:id/status', authenticateToken, requireRole(['Lead', 'Purchaser', 'Admin']), (req, res) => {
     try {
       const { status } = req.body;
       const validStatuses = ['PENDING', 'ORDERED', 'PARTIALLY_RECEIVED', 'COMPLETED', 'CANCELLED'];

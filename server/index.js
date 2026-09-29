@@ -15,6 +15,7 @@ import { createRequestsRouter } from './routes/requests.routes.js';
 import { createOrdersRouter } from './routes/orders.routes.js';
 import { createInvoicesRouter } from './routes/invoices.routes.js';
 import { createParsersRouter } from './routes/parsers.routes.js';
+import { createUsersRouter } from './routes/users.routes.js';
 
 dotenv.config();
 
@@ -43,6 +44,7 @@ export function createApp(targetDb = db, customWebhookUrl) {
 
   // API Routes Mounting
   app.use('/api/auth', createAuthRouter(targetDb));
+  app.use('/api/users', createUsersRouter(targetDb));
   app.use('/api/subsystems', createSubsystemsRouter(targetDb));
   app.use('/api/part-requests', createRequestsRouter(targetDb));
   app.use('/api/purchase-orders', createOrdersRouter(targetDb, customWebhookUrl));
