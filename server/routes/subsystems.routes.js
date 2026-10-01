@@ -255,6 +255,7 @@ export function createSubsystemsRouter(db = defaultDb) {
       return res.status(200).json(updated);
     } catch (err) {
       return res.status(500).json({ error: 'Failed to update subsystem budget: ' + err.message });
+    }
   });
 
   return router;
