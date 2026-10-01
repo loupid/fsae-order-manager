@@ -5,16 +5,24 @@ import LoginView from './views/LoginView';
 import MemberFunnelView from './views/MemberFunnelView';
 import PurchaserDashboard from './views/PurchaserDashboard';
 import CostReportView from './views/CostReportView';
+import AdminUsersView from './views/AdminUsersView';
 
 function AppContent() {
-  const { user, loading, isPurchaserOrAdmin } = useAuth();
+  const { user, loading, canOrder, canViewBudget, canManageUsers } = useAuth();
   const [activeTab, setActiveTab] = useState('funnel');
 
+  // Fallback to 'funnel' tab if user loses permission for active tab
   React.useEffect(() => {
-    if (activeTab === 'purchaser' && !isPurchaserOrAdmin) {
+    if (activeTab === 'purchaser' && !canOrder) {
       setActiveTab('funnel');
     }
-  }, [activeTab, isPurchaserOrAdmin]);
+    if (activeTab === 'cost-report' && !canViewBudget) {
+      setActiveTab('funnel');
+    }
+    if (activeTab === 'users' && !canManageUsers) {
+      setActiveTab('funnel');
+    }
+  }, [activeTab, canOrder, canViewBudget, canManageUsers]);
 
   if (loading) {
     return (
@@ -51,8 +59,9 @@ function AppContent() {
       
       <main style={{ flex: 1 }}>
         {activeTab === 'funnel' && <MemberFunnelView />}
-        {activeTab === 'purchaser' && (isPurchaserOrAdmin ? <PurchaserDashboard /> : <MemberFunnelView />)}
-        {activeTab === 'cost-report' && <CostReportView />}
+        {activeTab === 'purchaser' && (canOrder ? <PurchaserDashboard /> : <MemberFunnelView />)}
+        {activeTab === 'cost-report' && (canViewBudget ? <CostReportView /> : <MemberFunnelView />)}
+        {activeTab === 'users' && (canManageUsers ? <AdminUsersView /> : <MemberFunnelView />)}
       </main>
 
       <footer style={{

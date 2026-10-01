@@ -18,6 +18,9 @@ export function AuthProvider({ children }) {
 
     try {
       const res = await apiClient.getMe();
+      if (res.token) {
+        setStoredToken(res.token);
+      }
       setUser(res.user);
       setError(null);
     } catch (err) {
@@ -72,10 +75,23 @@ export function AuthProvider({ children }) {
     setError(null);
   };
 
-  const isPurchaser = user && user.role === 'Purchaser';
-  const isAdmin = user && user.role === 'Admin';
-  const isPurchaserOrAdmin = user && (user.role === 'Purchaser' || user.role === 'Admin');
-  const isMember = user && user.role === 'Member';
+  const isAdmin = !!(user && user.role === 'Admin');
+  const isLead = !!(user && (user.role === 'Lead' || user.role === 'Purchaser'));
+  const isMember = !!(user && user.role === 'Member');
+  const isPurchaser = !!(user && user.role === 'Purchaser');
+  const isPurchaserOrAdmin = isAdmin || isLead;
+
+  const canOrder = isAdmin || isLead;
+  const canViewBudget = isAdmin || isLead;
+  const dept = (user?.department || '').trim().toUpperCase();
+  const sub = (user?.subsystem || '').trim().toUpperCase();
+  const canEditBudget = isAdmin || (isLead && (
+    dept === 'TEAM ADMINISTRATION' ||
+    dept === 'ADM' ||
+    sub === 'TEAM ADMINISTRATION' ||
+    sub === 'ADM'
+  ));
+  const canManageUsers = isAdmin;
 
   const value = {
     user,
@@ -85,10 +101,15 @@ export function AuthProvider({ children }) {
     register,
     logout,
     refreshUser: loadCurrentUser,
-    isPurchaser,
     isAdmin,
+    isLead,
+    isMember,
+    isPurchaser,
     isPurchaserOrAdmin,
-    isMember
+    canOrder,
+    canViewBudget,
+    canEditBudget,
+    canManageUsers
   };
 
   return (

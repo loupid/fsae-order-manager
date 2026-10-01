@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../api/client';
-import { useAuth } from '../context/AuthContext';
-import { BarChart3, DollarSign, PieChart, ShieldCheck, AlertTriangle, Plus, Check, Pencil, X, Trash2 } from 'lucide-react';
+import { BarChart3, DollarSign, PieChart, ShieldCheck, AlertTriangle, Plus, Check, Pencil, X, Trash2, Edit2, Lock } from 'lucide-react';
 
 export default function CostReportView() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, canEditBudget, canViewBudget } = useAuth();
   const [subsystems, setSubsystems] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -44,12 +43,18 @@ export default function CostReportView() {
     e.preventDefault();
     if (!newName.trim() || !newCode.trim()) return;
 
+    const budgetVal = newBudget ? parseFloat(newBudget) : 0.0;
+    if (isNaN(budgetVal) || budgetVal < 0) {
+      alert('Le montant du budget alloué doit être un nombre positif ou nul.');
+      return;
+    }
+
     setCreating(true);
     try {
       await apiClient.createSubsystem({
         name: newName.trim(),
         code: newCode.trim().toUpperCase(),
-        budget_allocated: parseFloat(newBudget) || 0.0
+        budget_allocated: budgetVal
       });
       setNewName('');
       setNewCode('');
@@ -94,11 +99,15 @@ export default function CostReportView() {
     setSavingEdit(true);
     setEditError('');
     try {
-      await apiClient.updateSubsystem(editingSubsystem.id, {
-        budget_allocated: parsed,
-        name: editName.trim(),
-        code: editCode.trim().toUpperCase()
-      });
+      if (isAdmin) {
+        await apiClient.updateSubsystem(editingSubsystem.id, {
+          budget_allocated: parsed,
+          name: editName.trim(),
+          code: editCode.trim().toUpperCase()
+        });
+      } else {
+        await apiClient.updateSubsystemBudget(editingSubsystem.id, parsed);
+      }
       setEditingSubsystem(null);
       await loadSubsystems();
     } catch (err) {
@@ -149,27 +158,46 @@ export default function CostReportView() {
           </p>
         </div>
 
-        {isAdmin && (
-          <button
-            onClick={() => setShowAddSubsystem(true)}
-            style={{
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          {!canEditBudget && canViewBudget && (
+            <span style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '0.4rem',
-              padding: '0.55rem 1rem',
-              backgroundColor: '#064e3b',
-              color: '#6ee7b7',
-              border: '1px solid #059669',
-              borderRadius: '8px',
-              fontSize: '0.82rem',
-              fontWeight: '700',
-              cursor: 'pointer'
-            }}
-          >
-            <Plus style={{ width: '16px', height: '16px' }} />
-            + Ajouter Département
-          </button>
-        )}
+              gap: '0.35rem',
+              fontSize: '0.75rem',
+              padding: '0.4rem 0.75rem',
+              borderRadius: '6px',
+              backgroundColor: '#1e293b',
+              color: '#94a3b8',
+              border: '1px solid #334155'
+            }}>
+              <Lock style={{ width: '13px', height: '13px' }} />
+              Lecture seule (Édition : Team Admin & Admins)
+            </span>
+          )}
+
+          {canEditBudget && (
+            <button
+              onClick={() => setShowAddSubsystem(true)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                padding: '0.55rem 1rem',
+                backgroundColor: '#064e3b',
+                color: '#6ee7b7',
+                border: '1px solid #059669',
+                borderRadius: '8px',
+                fontSize: '0.82rem',
+                fontWeight: '700',
+                cursor: 'pointer'
+              }}
+            >
+              <Plus style={{ width: '16px', height: '16px' }} />
+              + Ajouter Département
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Over-Budget Alert Banner */}
@@ -256,8 +284,13 @@ export default function CostReportView() {
         borderRadius: '12px',
         overflow: 'hidden'
       }}>
-        <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #232733', fontWeight: '700', color: '#f8fafc', fontSize: '0.95rem' }}>
-          Ventilation par Sous-Système
+        <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #232733', fontWeight: '700', color: '#f8fafc', fontSize: '0.95rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>Ventilation par Sous-Système</span>
+          {canEditBudget && (
+            <span style={{ fontSize: '0.75rem', color: '#a7f3d0', fontWeight: '600' }}>
+              ✓ Droits d'édition budgétaire actifs
+            </span>
+          )}
         </div>
 
         {loading ? (
@@ -292,7 +325,31 @@ export default function CostReportView() {
                       {s.name}
                     </td>
                     <td style={{ padding: '0.85rem 1.25rem', textAlign: 'right', color: '#f1f5f9', fontWeight: '600' }}>
-                      ${Number(s.budget_allocated).toFixed(2)}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                        <span>${Number(s.budget_allocated).toFixed(2)}</span>
+                        {canEditBudget && (
+                          <button
+                            onClick={() => handleOpenEdit(s)}
+                            title="Modifier le budget alloué"
+                            style={{
+                              background: 'transparent',
+                              border: '1px solid #334155',
+                              color: '#94a3b8',
+                              borderRadius: '4px',
+                              padding: '0.2rem 0.35rem',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              transition: 'all 0.15s'
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.color = '#38bdf8'; e.currentTarget.style.borderColor = '#38bdf8'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.borderColor = '#334155'; }}
+                          >
+                            <Edit2 style={{ width: '13px', height: '13px' }} />
+                          </button>
+                        )}
+                      </div>
                     </td>
                     <td style={{ padding: '0.85rem 1.25rem', textAlign: 'right', color: '#38bdf8' }}>
                       ${Number(s.committed_cost).toFixed(2)}
@@ -362,6 +419,99 @@ export default function CostReportView() {
           </table>
         )}
       </div>
+
+      {/* Edit Budget Modal */}
+      {editingSubsystem && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.75)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 50,
+          padding: '1rem'
+        }}>
+          <div style={{
+            backgroundColor: '#161920',
+            border: '1px solid #2d3342',
+            borderRadius: '12px',
+            width: '100%',
+            maxWidth: '440px',
+            padding: '1.5rem',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)'
+          }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#f8fafc', margin: '0 0 0.5rem' }}>
+              Modifier le Budget — {editingSubsystem.name}
+            </h3>
+            <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '0 0 1.25rem' }}>
+              Pôle : <span style={{ color: '#6ee7b7', fontWeight: '700' }}>{editingSubsystem.code}</span> • Définir la nouvelle enveloppe budgétaire allouée.
+            </p>
+
+            <form onSubmit={handleSaveBudget} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: '#cbd5e1', marginBottom: '0.35rem' }}>
+                  Nouveau Budget Alloué ($ CAD) *
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  required
+                  value={editBudgetValue}
+                  onChange={(e) => setEditBudgetValue(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.65rem 0.85rem',
+                    backgroundColor: '#0f1115',
+                    border: '1px solid #334155',
+                    borderRadius: '6px',
+                    color: '#f8fafc',
+                    fontSize: '0.9rem',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setEditingSubsystem(null)}
+                  style={{
+                    padding: '0.55rem 1rem',
+                    borderRadius: '6px',
+                    border: '1px solid #334155',
+                    backgroundColor: 'transparent',
+                    color: '#cbd5e1',
+                    fontWeight: '600',
+                    fontSize: '0.85rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingBudget}
+                  style={{
+                    padding: '0.55rem 1.25rem',
+                    borderRadius: '6px',
+                    border: 'none',
+                    backgroundColor: '#059669',
+                    color: '#fff',
+                    fontWeight: '700',
+                    fontSize: '0.85rem',
+                    cursor: savingBudget ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  {savingBudget ? 'Enregistrement...' : 'Enregistrer le Budget'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Add Subsystem Modal */}
       {showAddSubsystem && (

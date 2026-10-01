@@ -3,20 +3,21 @@ import { useAuth } from '../context/AuthContext';
 import { ShoppingBag, Users, BarChart3, Settings, LogOut, CheckCircle2, AlertTriangle, Shield } from 'lucide-react';
 
 export default function Navbar({ activeTab, onTabChange }) {
-  const { user, logout, isPurchaserOrAdmin } = useAuth();
+  const { user, logout, canOrder, canViewBudget, canManageUsers } = useAuth();
 
-  const getRoleBadgeStyle = (role) => {
+  const getRoleBadge = (role) => {
     switch (role) {
       case 'Admin':
-        return { bg: '#3b1d54', color: '#c084fc', border: '1px solid #9333ea' };
+        return { bg: '#3b1d54', color: '#c084fc', border: '1px solid #9333ea', label: 'Admin' };
+      case 'Lead':
       case 'Purchaser':
-        return { bg: '#17324d', color: '#60a5fa', border: '1px solid #2563eb' };
+        return { bg: '#17324d', color: '#60a5fa', border: '1px solid #2563eb', label: "Chef d'équipe" };
       default:
-        return { bg: '#1e293b', color: '#94a3b8', border: '1px solid #475569' };
+        return { bg: '#1e293b', color: '#94a3b8', border: '1px solid #475569', label: 'Membre' };
     }
   };
 
-  const badgeStyle = getRoleBadgeStyle(user?.role);
+  const badge = getRoleBadge(user?.role);
 
   return (
     <header style={{
@@ -82,7 +83,7 @@ export default function Navbar({ activeTab, onTabChange }) {
             Demandes de Pièces
           </button>
 
-          {isPurchaserOrAdmin && (
+          {canOrder && (
             <button
               onClick={() => onTabChange('purchaser')}
               style={{
@@ -105,26 +106,51 @@ export default function Navbar({ activeTab, onTabChange }) {
             </button>
           )}
 
-          <button
-            onClick={() => onTabChange('cost-report')}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              padding: '0.45rem 0.85rem',
-              borderRadius: '6px',
-              border: activeTab === 'cost-report' ? '1px solid #a855f7' : '1px solid transparent',
-              backgroundColor: activeTab === 'cost-report' ? '#581c8733' : 'transparent',
-              color: activeTab === 'cost-report' ? '#c084fc' : '#94a3b8',
-              fontSize: '0.85rem',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            <BarChart3 style={{ width: '16px', height: '16px' }} />
-            Cost Report FSAE
-          </button>
+          {canViewBudget && (
+            <button
+              onClick={() => onTabChange('cost-report')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                padding: '0.45rem 0.85rem',
+                borderRadius: '6px',
+                border: activeTab === 'cost-report' ? '1px solid #a855f7' : '1px solid transparent',
+                backgroundColor: activeTab === 'cost-report' ? '#581c8733' : 'transparent',
+                color: activeTab === 'cost-report' ? '#c084fc' : '#94a3b8',
+                fontSize: '0.85rem',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <BarChart3 style={{ width: '16px', height: '16px' }} />
+              Cost Report FSAE
+            </button>
+          )}
+
+          {canManageUsers && (
+            <button
+              onClick={() => onTabChange('users')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                padding: '0.45rem 0.85rem',
+                borderRadius: '6px',
+                border: activeTab === 'users' ? '1px solid #eab308' : '1px solid transparent',
+                backgroundColor: activeTab === 'users' ? '#713f1233' : 'transparent',
+                color: activeTab === 'users' ? '#facc15' : '#94a3b8',
+                fontSize: '0.85rem',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <Users style={{ width: '16px', height: '16px' }} />
+              👥 Gestion Équipe & Accès
+            </button>
+          )}
         </nav>
       </div>
 
@@ -160,11 +186,11 @@ export default function Navbar({ activeTab, onTabChange }) {
           fontWeight: '700',
           padding: '0.2rem 0.55rem',
           borderRadius: '9999px',
-          backgroundColor: badgeStyle.bg,
-          color: badgeStyle.color,
-          border: badgeStyle.border
+          backgroundColor: badge.bg,
+          color: badge.color,
+          border: badge.border
         }}>
-          {user?.role}
+          {badge.label}
         </span>
 
         <button

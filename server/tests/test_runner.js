@@ -19,6 +19,9 @@ async function runAllTests() {
     await import('./schema.test.js');
     console.log('\n✨ Tier 1 Baseline Tests Completed Successfully.\n');
 
+
+
+
     console.log('👉 [TIER 1-ADV] Running Database Adversarial Stress Tests...');
     await import('./adversarial_m1.test.js');
     console.log('\n✨ Tier 1 Adversarial Tests Completed Successfully.\n');
@@ -51,13 +54,17 @@ async function runAllTests() {
     await import('./adversarial_m4_challenger.test.js');
     console.log('\n✨ Tier 4 Challenger Adversarial Tests Completed Successfully.\n');
 
-    console.log('👉 [TIER 5-P0/P1] Running P0 & P1 Regression & Security Test Suite...');
-    await import('./p0_p1_fixes.test.js');
-    console.log('\n✨ Tier 5 P0/P1 Tests Completed Successfully.\n');
+    console.log('👉 [TIER 5-ROLES] Running Admin User Management & Role Permissions Tests...');
+    await import('./user_management_and_roles.test.js');
+    console.log('\n✨ Admin User Management & Role Permissions Tests Completed Successfully.\n');
 
-    console.log('👉 [TIER 6-SUBSYSTEMS] Running Subsystems & Budgets Management Test Suite...');
+    console.log('👉 [TIER 6-P0/P1] Running P0 & P1 Regression & Security Test Suite...');
+    await import('./p0_p1_fixes.test.js');
+    console.log('\n✨ Tier 6 P0/P1 Tests Completed Successfully.\n');
+
+    console.log('👉 [TIER 7-SUBSYSTEMS] Running Subsystems & Budgets Management Test Suite...');
     await import('./subsystems_management.test.js');
-    console.log('\n✨ Tier 6 Subsystems Management Tests Completed Successfully.\n');
+    console.log('\n✨ Tier 7 Subsystems Management Tests Completed Successfully.\n');
 
     console.log('====================================================');
     console.log('🏆 ALL TEST SUITES PASSED WITH 100% SUCCESS!');

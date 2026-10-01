@@ -166,7 +166,7 @@ export function createRequestsRouter(db = defaultDb) {
     }
   });
 
-  // PATCH /api/part-requests/:id — Edit part request (Owner, Purchaser, or Admin)
+  // PATCH /api/part-requests/:id — Edit part request (Owner, Lead, Purchaser, or Admin)
   router.patch('/:id', authenticateToken, (req, res) => {
     try {
       const reqRow = db.prepare('SELECT * FROM part_requests WHERE id = ?').get(req.params.id);
@@ -175,7 +175,7 @@ export function createRequestsRouter(db = defaultDb) {
       }
 
       const isOwner = reqRow.requester_id === req.user.id;
-      const isPrivileged = ['Purchaser', 'Admin'].includes(req.user.role);
+      const isPrivileged = ['Lead', 'Purchaser', 'Admin'].includes(req.user.role);
 
       if (!isOwner && !isPrivileged) {
         return res.status(403).json({ error: 'Forbidden: You do not have permission to edit this request' });
@@ -308,8 +308,8 @@ export function createRequestsRouter(db = defaultDb) {
     }
   });
 
-  // PATCH /api/part-requests/:id/status — Status update (Purchaser/Admin)
-  router.patch('/:id/status', authenticateToken, requireRole(['Purchaser', 'Admin']), (req, res) => {
+  // PATCH /api/part-requests/:id/status — Status update (Lead/Purchaser/Admin)
+  router.patch('/:id/status', authenticateToken, requireRole(['Lead', 'Purchaser', 'Admin']), (req, res) => {
     try {
       const { status } = req.body;
       const validStatuses = ['DRAFT', 'SUBMITTED', 'APPROVED', 'ORDERED', 'RECEIVED', 'REJECTED'];

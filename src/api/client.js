@@ -80,7 +80,17 @@ export const apiClient = {
   },
   getMe: () => request('/auth/me'),
 
-  // Subsystems
+  // Users Management (Admin only)
+  getUsers: () => request('/users'),
+  updateUser: (id, data) => request(`/users/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data)
+  }),
+  deleteUser: (id) => request(`/users/${id}`, {
+    method: 'DELETE'
+  }),
+
+  // Subsystems & Budgets
   getSubsystems: () => request('/subsystems'),
   getPublicSubsystems: () => request('/subsystems/public-list'),
   createSubsystem: (subsystem) => request('/subsystems', {
@@ -90,6 +100,10 @@ export const apiClient = {
   updateSubsystem: (id, updates) => request(`/subsystems/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(updates)
+  }),
+  updateSubsystemBudget: (id, budget_allocated) => request(`/subsystems/${id}/budget`, {
+    method: 'PATCH',
+    body: JSON.stringify({ budget_allocated })
   }),
   deleteSubsystem: (id) => request(`/subsystems/${id}`, {
     method: 'DELETE'

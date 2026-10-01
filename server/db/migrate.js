@@ -22,7 +22,7 @@ export function runMigrations(targetDb = defaultDb) {
   // Execute DDL schema inside a transaction
   targetDb.exec(schemaSql);
 
-  // Ensure non-breaking optional columns exist on existing databases
+    // Ensure non-breaking optional columns exist on existing databases
   try {
     const tableInfo = targetDb.prepare("PRAGMA table_info(users)").all();
     const existingCols = tableInfo.map(col => col.name);
@@ -31,6 +31,32 @@ export function runMigrations(targetDb = defaultDb) {
       if (!existingCols.includes(col)) {
         targetDb.exec(`ALTER TABLE users ADD COLUMN ${col} TEXT`);
       }
+    }
+
+    // Check if role CHECK constraint needs migration to support 'Lead'
+    const usersMaster = targetDb.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='users'").get();
+    if (usersMaster && usersMaster.sql && !usersMaster.sql.includes("'Lead'")) {
+      targetDb.pragma('foreign_keys = OFF');
+      targetDb.exec(`
+        CREATE TABLE users_lead_migration (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          email TEXT UNIQUE NOT NULL COLLATE NOCASE,
+          password_hash TEXT NOT NULL,
+          role TEXT CHECK(role IN ('Member', 'Lead', 'Purchaser', 'Admin')) NOT NULL DEFAULT 'Member',
+          department TEXT,
+          subsystem TEXT,
+          discord_handle TEXT,
+          tshirt_size TEXT,
+          created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+        INSERT INTO users_lead_migration (id, name, email, password_hash, role, department, subsystem, discord_handle, tshirt_size, created_at)
+        SELECT id, name, email, password_hash, role, department, subsystem, discord_handle, tshirt_size, created_at FROM users;
+        DROP TABLE users;
+        ALTER TABLE users_lead_migration RENAME TO users;
+        CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+      `);
+      targetDb.pragma('foreign_keys = ON');
     }
   } catch (e) {
     // Ignore if table is being initialized
