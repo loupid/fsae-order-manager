@@ -1,7 +1,11 @@
 import bcrypt from 'bcryptjs';
+import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { db as defaultDb } from './database.js';
 import { runMigrations } from './migrate.js';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const SALT_ROUNDS = 10;
 
@@ -24,9 +28,7 @@ export function seedSubsystems(targetDb) {
   const insertSubsystem = targetDb.prepare(`
     INSERT INTO subsystems (name, code, budget_allocated)
     VALUES (@name, @code, @budget_allocated)
-    ON CONFLICT(code) DO UPDATE SET
-      name = excluded.name,
-      budget_allocated = excluded.budget_allocated
+    ON CONFLICT(code) DO NOTHING
   `);
 
   for (const s of OFFICIAL_SUBSYSTEMS) {
@@ -115,6 +117,31 @@ export function runProdSeed(targetDb = defaultDb) {
 }
 
 /**
+ * Ensures minimal valid demo PDF invoices exist on disk.
+ */
+export function ensureDemoInvoiceFiles() {
+  const targetDirs = new Set([
+    path.resolve(__dirname, '..', '..', 'uploads', 'invoices'),
+    path.resolve(process.cwd(), 'uploads', 'invoices')
+  ]);
+
+  const dummyPdfContent = Buffer.from('%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF');
+  const demoFiles = ['INV-2026-0001.pdf', 'INV-2026-0002.pdf'];
+
+  for (const uploadDir of targetDirs) {
+    if (!fs.existsSync(uploadDir)) {
+      try { fs.mkdirSync(uploadDir, { recursive: true }); } catch (e) {}
+    }
+    for (const fileName of demoFiles) {
+      const filePath = path.join(uploadDir, fileName);
+      if (!fs.existsSync(filePath)) {
+        try { fs.writeFileSync(filePath, dummyPdfContent); } catch (e) {}
+      }
+    }
+  }
+}
+
+/**
  * DEMO / DEV SEED: Seeds realistic test dataset with various roles, part requests,
  * suppliers (DigiKey, Mouser, McMaster), urgency levels, and invoices.
  * @param {import('better-sqlite3').Database} [targetDb]
@@ -122,6 +149,7 @@ export function runProdSeed(targetDb = defaultDb) {
  */
 export function runDemoSeed(targetDb = defaultDb) {
   runMigrations(targetDb);
+  ensureDemoInvoiceFiles();
 
   const demoTransaction = targetDb.transaction(() => {
     console.log('🧪 [SEED:DEMO] Initialisation de la base DEV / DÉMONSTRATION...');

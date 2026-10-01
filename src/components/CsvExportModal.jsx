@@ -48,35 +48,44 @@ function CsvExportModal({ isOpen, onClose, title = "Exporter la liste", items = 
   const csvContent = useMemo(() => {
     if (activeItems.length === 0) return '';
 
+    const escapeCsvField = (val) => String(val ?? '').replace(/"/g, '""');
+
     let headers = '';
     let rows = [];
 
     if (provider === 'DigiKey') {
       headers = 'Part Number,Quantity,Customer Reference';
       rows = activeItems.map(item => {
-        const skuVal = (useSku && item.sku && item.distributor === 'DigiKey') ? item.sku : item.mpn;
-        const qtyVal = exportMode === 'missing' ? (item.quantityMissing !== undefined ? item.quantityMissing : item.quantity) : item.quantity;
-        return `"${skuVal.replace(/"/g, '""')}",${qtyVal},"${customerRef.replace(/"/g, '""')}"`;
+        const itemDist = String(item.distributor || item.supplier || '').toLowerCase();
+        const skuVal = (useSku && item.sku && itemDist === 'digikey') ? item.sku : (item.mpn || item.sku || '');
+        const qtyVal = exportMode === 'missing' ? (item.quantityMissing !== undefined ? item.quantityMissing : (item.quantity || 1)) : (item.quantity || 1);
+        return `"${escapeCsvField(skuVal)}",${qtyVal},"${escapeCsvField(customerRef)}"`;
       });
     } else if (provider === 'Mouser') {
       headers = 'Mouser Part Number,Quantity,Customer Reference';
       rows = activeItems.map(item => {
-        const skuVal = (useSku && item.sku && item.distributor === 'Mouser') ? item.sku : item.mpn;
-        const qtyVal = exportMode === 'missing' ? (item.quantityMissing !== undefined ? item.quantityMissing : item.quantity) : item.quantity;
-        return `"${skuVal.replace(/"/g, '""')}",${qtyVal},"${customerRef.replace(/"/g, '""')}"`;
+        const itemDist = String(item.distributor || item.supplier || '').toLowerCase();
+        const skuVal = (useSku && item.sku && itemDist === 'mouser') ? item.sku : (item.mpn || item.sku || '');
+        const qtyVal = exportMode === 'missing' ? (item.quantityMissing !== undefined ? item.quantityMissing : (item.quantity || 1)) : (item.quantity || 1);
+        return `"${escapeCsvField(skuVal)}",${qtyVal},"${escapeCsvField(customerRef)}"`;
       });
     } else if (provider === 'LCSC') {
       headers = 'LCSC Part Number,Quantity,Customer Reference';
       rows = activeItems.map(item => {
-        const skuVal = (useSku && item.sku && item.distributor === 'LCSC') ? item.sku : item.mpn;
-        const qtyVal = exportMode === 'missing' ? (item.quantityMissing !== undefined ? item.quantityMissing : item.quantity) : item.quantity;
-        return `"${skuVal.replace(/"/g, '""')}",${qtyVal},"${customerRef.replace(/"/g, '""')}"`;
+        const itemDist = String(item.distributor || item.supplier || '').toLowerCase();
+        const skuVal = (useSku && item.sku && itemDist === 'lcsc') ? item.sku : (item.mpn || item.sku || '');
+        const qtyVal = exportMode === 'missing' ? (item.quantityMissing !== undefined ? item.quantityMissing : (item.quantity || 1)) : (item.quantity || 1);
+        return `"${escapeCsvField(skuVal)}",${qtyVal},"${escapeCsvField(customerRef)}"`;
       });
     } else { // Generic / CSV complet
       headers = 'Manufacturer Part Number (MPN),Distributor Part Number (SKU),Distributor,Quantity,Price CAD,Description,Customer Reference';
       rows = activeItems.map(item => {
-        const qtyVal = exportMode === 'missing' ? (item.quantityMissing !== undefined ? item.quantityMissing : item.quantity) : item.quantity;
-        return `"${item.mpn.replace(/"/g, '""')}","${(item.sku || '').replace(/"/g, '""')}","${(item.distributor || '').replace(/"/g, '""')}",${qtyVal},${item.price || 0},"${(item.description || '').replace(/"/g, '""')}","${customerRef.replace(/"/g, '""')}"`;
+        const qtyVal = exportMode === 'missing' ? (item.quantityMissing !== undefined ? item.quantityMissing : (item.quantity || 1)) : (item.quantity || 1);
+        const mpnVal = item.mpn || item.sku || '';
+        const skuVal = item.sku || '';
+        const distVal = item.distributor || item.supplier || '';
+        const descVal = item.description || '';
+        return `"${escapeCsvField(mpnVal)}","${escapeCsvField(skuVal)}","${escapeCsvField(distVal)}",${qtyVal},${Number(item.price) || 0},"${escapeCsvField(descVal)}","${escapeCsvField(customerRef)}"`;
       });
     }
 
@@ -102,7 +111,8 @@ function CsvExportModal({ isOpen, onClose, title = "Exporter la liste", items = 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    const fileName = `${provider}_BOM_${customerRef.replace(/\s+/g, '_') || 'Export'}.csv`;
+    const safeRef = String(customerRef || 'Export').replace(/"/g, '').replace(/\s+/g, '_');
+    const fileName = `${provider}_BOM_${safeRef}.csv`;
     link.setAttribute("href", url);
     link.setAttribute("download", fileName);
     document.body.appendChild(link);
@@ -325,11 +335,11 @@ function CsvExportModal({ isOpen, onClose, title = "Exporter la liste", items = 
                             </td>
                             <td style={{ padding: '0.5rem 0.75rem' }}>
                               <strong className="mono" style={{ display: 'block', fontSize: '0.8rem' }}>
-                                {useSku && isChosenProviderSku ? item.sku : item.mpn}
+                                {useSku && isChosenProviderSku ? item.sku : (item.mpn || item.sku || '')}
                               </strong>
-                              {useSku && isChosenProviderSku && (
+                              {useSku && isChosenProviderSku && (item.mpn || item.sku) && (
                                 <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                                  MPN: {item.mpn} ({provider})
+                                  MPN: {item.mpn || item.sku} ({provider})
                                 </span>
                               )}
                             </td>

@@ -1,8 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { apiClient } from '../api/client';
+import { useAuth } from '../context/AuthContext';
+import { resolveDefaultSubsystemId } from '../utils/subsystemHelper';
 import { X, Sparkles, AlertCircle } from 'lucide-react';
 
-export default function PartRequestModal({ isOpen, onClose, onCreated, subsystems = [] }) {
+export default function PartRequestModal({ isOpen, onClose, onCreated, subsystems = [], currentUser }) {
+  let authContext = null;
+  try {
+    authContext = useAuth();
+  } catch (e) {
+    // Fallback if rendered outside AuthProvider
+  }
+  const user = currentUser || authContext?.user;
+
+  const [internalSubsystems, setInternalSubsystems] = useState([]);
+  const activeSubsystems = (subsystems && subsystems.length > 0) ? subsystems : internalSubsystems;
+
+  useEffect(() => {
+    if (isOpen && (!subsystems || subsystems.length === 0)) {
+      apiClient.getPublicSubsystems()
+        .then(data => {
+          if (Array.isArray(data) && data.length > 0) {
+            setInternalSubsystems(data);
+          }
+        })
+        .catch(err => {
+          console.warn('PartRequestModal could not fetch public subsystems fallback:', err.message);
+        });
+    }
+  }, [isOpen, subsystems]);
+
   const [url, setUrl] = useState('');
   const [supplier, setSupplier] = useState('');
   const [sku, setSku] = useState('');
@@ -10,13 +37,48 @@ export default function PartRequestModal({ isOpen, onClose, onCreated, subsystem
   const [description, setDescription] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [unitPriceEst, setUnitPriceEst] = useState('');
-  const [subsystemId, setSubsystemId] = useState(subsystems[0]?.id || '');
+  const [subsystemId, setSubsystemId] = useState(() => resolveDefaultSubsystemId(activeSubsystems, user));
   const [urgencyLevel, setUrgencyLevel] = useState('NORMAL');
   
   const [parsing, setParsing] = useState(false);
   const [parseSuccess, setParseSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  const resetForm = () => {
+    setUrl('');
+    setSupplier('');
+    setSku('');
+    setMpn('');
+    setDescription('');
+    setQuantity(1);
+    setUnitPriceEst('');
+    setSubsystemId(resolveDefaultSubsystemId(activeSubsystems, user));
+    setUrgencyLevel('NORMAL');
+    setParsing(false);
+    setParseSuccess(false);
+    setSubmitting(false);
+    setError('');
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      const isValid = Boolean(subsystemId) && activeSubsystems.some(s => Number(s.id) === Number(subsystemId));
+      if (!isValid) {
+        const defaultId = resolveDefaultSubsystemId(activeSubsystems, user);
+        if (defaultId !== '' && defaultId !== null && defaultId !== undefined) {
+          setSubsystemId(defaultId);
+        }
+      }
+    } else {
+      resetForm();
+    }
+  }, [isOpen, activeSubsystems, user]);
 
   // Fast client-side regex extractor for immediate response on paste/type
   const extractFromUrlClient = (rawUrl) => {
@@ -25,10 +87,17 @@ export default function PartRequestModal({ isOpen, onClose, onCreated, subsystem
       const u = rawUrl.trim();
       if (/digikey\./i.test(u)) {
         setSupplier('DigiKey');
-        const dkMatch = u.match(/(?:products\/detail\/[^\/]+\/([^\/\?#]+))/i);
-        if (dkMatch && dkMatch[1]) {
-          const extractedSku = decodeURIComponent(dkMatch[1]);
+        const dk3Match = u.match(/(?:products\/detail|product-detail)\/(?:[a-z]{2}\/)?[^\/]+\/([^\/\?#]+)\/([^\/\?#]+)/i);
+        const dk2Match = u.match(/(?:products\/detail|product-detail)\/(?:[a-z]{2}\/)?[^\/]+\/([^\/\?#]+)/i);
+        if (dk3Match) {
+          const extractedMpn = decodeURIComponent(dk3Match[1]).trim();
+          const extractedSku = decodeURIComponent(dk3Match[2]).trim();
+          setMpn(extractedMpn);
           setSku(extractedSku);
+          setParseSuccess(true);
+        } else if (dk2Match && dk2Match[1]) {
+          const extractedMpn = decodeURIComponent(dk2Match[1]).trim();
+          setMpn(extractedMpn);
           setParseSuccess(true);
         }
       } else if (/mouser\./i.test(u)) {
@@ -100,7 +169,15 @@ export default function PartRequestModal({ isOpen, onClose, onCreated, subsystem
       return;
     }
 
-    if (!subsystemId) {
+    let targetSubsystemId = subsystemId;
+    if (!targetSubsystemId && activeSubsystems.length > 0) {
+      targetSubsystemId = resolveDefaultSubsystemId(activeSubsystems, user) || activeSubsystems[0]?.id;
+      if (targetSubsystemId !== '' && targetSubsystemId !== null && targetSubsystemId !== undefined) {
+        setSubsystemId(targetSubsystemId);
+      }
+    }
+
+    if (!targetSubsystemId) {
       setError('Veuillez sélectionner un sous-système.');
       return;
     }
@@ -108,7 +185,7 @@ export default function PartRequestModal({ isOpen, onClose, onCreated, subsystem
     setSubmitting(true);
     try {
       const newReq = await apiClient.createPartRequest({
-        subsystem_id: Number(subsystemId),
+        subsystem_id: Number(targetSubsystemId),
         supplier: supplier.trim() || 'Fournisseur inconnu',
         sku: sku.trim() || mpn.trim(),
         url: url.trim(),
@@ -120,6 +197,7 @@ export default function PartRequestModal({ isOpen, onClose, onCreated, subsystem
       });
 
       onCreated(newReq);
+      resetForm();
       onClose();
     } catch (err) {
       setError(err.message || 'Erreur lors de la soumission de la demande.');
@@ -166,7 +244,7 @@ export default function PartRequestModal({ isOpen, onClose, onCreated, subsystem
             </h3>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             style={{
               background: 'transparent',
               border: 'none',
@@ -301,6 +379,11 @@ export default function PartRequestModal({ isOpen, onClose, onCreated, subsystem
                   boxSizing: 'border-box'
                 }}
               />
+              {mpn && (
+                <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+                  MPN détecté : <strong style={{ color: '#38bdf8' }}>{mpn}</strong>
+                </div>
+              )}
             </div>
           </div>
 
@@ -335,8 +418,8 @@ export default function PartRequestModal({ isOpen, onClose, onCreated, subsystem
                 Sous-système FSAE *
               </label>
               <select
-                value={subsystemId}
-                onChange={(e) => setSubsystemId(e.target.value)}
+                value={subsystemId ? String(subsystemId) : (activeSubsystems[0] ? String(activeSubsystems[0].id) : '')}
+                onChange={(e) => setSubsystemId(e.target.value ? Number(e.target.value) : '')}
                 style={{
                   width: '100%',
                   padding: '0.65rem 0.85rem',
@@ -348,11 +431,20 @@ export default function PartRequestModal({ isOpen, onClose, onCreated, subsystem
                   boxSizing: 'border-box'
                 }}
               >
-                {subsystems.map(s => (
-                  <option key={s.id} value={s.id}>
-                    [{s.code}] {s.name}
-                  </option>
-                ))}
+                {activeSubsystems.length === 0 ? (
+                  <option value="">Chargement des sous-systèmes...</option>
+                ) : (
+                  <>
+                    {!subsystemId && (
+                      <option value="" disabled>-- Sélectionner un sous-système --</option>
+                    )}
+                    {activeSubsystems.map(s => (
+                      <option key={s.id} value={s.id}>
+                        [{s.code}] {s.name}
+                      </option>
+                    ))}
+                  </>
+                )}
               </select>
             </div>
 
@@ -435,7 +527,7 @@ export default function PartRequestModal({ isOpen, onClose, onCreated, subsystem
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               style={{
                 padding: '0.6rem 1.1rem',
                 borderRadius: '6px',

@@ -82,9 +82,17 @@ export const apiClient = {
 
   // Subsystems
   getSubsystems: () => request('/subsystems'),
+  getPublicSubsystems: () => request('/subsystems/public-list'),
   createSubsystem: (subsystem) => request('/subsystems', {
     method: 'POST',
     body: JSON.stringify(subsystem)
+  }),
+  updateSubsystem: (id, updates) => request(`/subsystems/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(updates)
+  }),
+  deleteSubsystem: (id) => request(`/subsystems/${id}`, {
+    method: 'DELETE'
   }),
 
   // Part Requests
@@ -121,6 +129,9 @@ export const apiClient = {
   updatePurchaseOrderStatus: (id, status) => request(`/purchase-orders/${id}/status`, {
     method: 'PATCH',
     body: JSON.stringify({ status })
+  }),
+  cancelPurchaseOrder: (id) => request(`/purchase-orders/${id}/cancel`, {
+    method: 'PATCH'
   }),
 
   // Invoices

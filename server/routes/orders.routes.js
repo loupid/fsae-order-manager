@@ -113,16 +113,21 @@ export function createOrdersRouter(db = defaultDb, customWebhookUrl) {
         return res.status(400).json({ error: 'One or more requested part requests do not exist' });
       }
 
-      // Verify same supplier and unassigned
+      // Verify same supplier, unassigned, and valid status
       for (const reqItem of requests) {
         if (reqItem.supplier.toLowerCase() !== supplier.trim().toLowerCase()) {
           return res.status(400).json({
             error: `Supplier mismatch: Request #${reqItem.id} has supplier '${reqItem.supplier}', expected '${supplier}'`
           });
         }
-        if (reqItem.po_id !== null && reqItem.status === 'ORDERED') {
+        if (reqItem.po_id !== null) {
           return res.status(400).json({
             error: `Request #${reqItem.id} is already assigned to active PO #${reqItem.po_id}`
+          });
+        }
+        if (!['SUBMITTED', 'APPROVED'].includes(reqItem.status)) {
+          return res.status(400).json({
+            error: `Request #${reqItem.id} cannot be included in a purchase order with status '${reqItem.status}'. Only SUBMITTED or APPROVED items are eligible.`
           });
         }
       }
@@ -143,11 +148,14 @@ export function createOrdersRouter(db = defaultDb, customWebhookUrl) {
         const updateReq = db.prepare(`
           UPDATE part_requests 
           SET po_id = ?, status = 'ORDERED', updated_at = CURRENT_TIMESTAMP 
-          WHERE id = ?
+          WHERE id = ? AND po_id IS NULL AND status IN ('SUBMITTED', 'APPROVED')
         `);
 
         for (const reqItem of requests) {
-          updateReq.run(newPoId, reqItem.id);
+          const resUpdate = updateReq.run(newPoId, reqItem.id);
+          if (resUpdate.changes === 0) {
+            throw new Error(`Request #${reqItem.id} is no longer eligible or was concurrently modified`);
+          }
         }
 
         return newPoId;
@@ -197,11 +205,12 @@ export function createOrdersRouter(db = defaultDb, customWebhookUrl) {
             WHERE po_id = ?
           `).run(po.id);
         } else if (status === 'CANCELLED') {
+          const resetStatus = req.body.reset_status || 'APPROVED';
           db.prepare(`
             UPDATE part_requests 
-            SET po_id = NULL, status = 'APPROVED', updated_at = CURRENT_TIMESTAMP 
+            SET po_id = NULL, status = ?, updated_at = CURRENT_TIMESTAMP 
             WHERE po_id = ?
-          `).run(po.id);
+          `).run(resetStatus, po.id);
         }
       });
 
@@ -222,6 +231,54 @@ export function createOrdersRouter(db = defaultDb, customWebhookUrl) {
       return res.status(200).json({ ...updatedPo, items });
     } catch (err) {
       return res.status(500).json({ error: 'Failed to update purchase order: ' + err.message });
+    }
+  });
+
+  // PATCH /api/purchase-orders/:id/cancel — Cancel PO and reset items to SUBMITTED
+  router.patch('/:id/cancel', authenticateToken, requireRole(['Purchaser', 'Admin']), (req, res) => {
+    try {
+      const po = db.prepare('SELECT * FROM purchase_orders WHERE id = ?').get(req.params.id);
+      if (!po) {
+        return res.status(404).json({ error: 'Purchase order not found' });
+      }
+
+      if (!['PENDING', 'ORDERED'].includes(po.status)) {
+        return res.status(400).json({ error: `Cannot cancel purchase order with status '${po.status}'` });
+      }
+
+      const linkedReqIds = db.prepare('SELECT id FROM part_requests WHERE po_id = ?').all(po.id).map(r => r.id);
+
+      const updateTx = db.transaction(() => {
+        db.prepare(`
+          UPDATE purchase_orders 
+          SET status = 'CANCELLED', updated_at = CURRENT_TIMESTAMP 
+          WHERE id = ?
+        `).run(po.id);
+
+        db.prepare(`
+          UPDATE part_requests 
+          SET po_id = NULL, status = 'SUBMITTED', updated_at = CURRENT_TIMESTAMP 
+          WHERE po_id = ?
+        `).run(po.id);
+      });
+
+      updateTx();
+
+      const updatedPo = db.prepare('SELECT * FROM purchase_orders WHERE id = ?').get(po.id);
+      let items = [];
+      if (linkedReqIds.length > 0) {
+        const placeholders = linkedReqIds.map(() => '?').join(',');
+        items = db.prepare(`
+          SELECT pr.*, s.code AS subsystem_code, s.name AS subsystem_name 
+          FROM part_requests pr 
+          JOIN subsystems s ON pr.subsystem_id = s.id 
+          WHERE pr.id IN (${placeholders})
+        `).all(...linkedReqIds);
+      }
+
+      return res.status(200).json({ ...updatedPo, items });
+    } catch (err) {
+      return res.status(500).json({ error: 'Failed to cancel purchase order: ' + err.message });
     }
   });
 

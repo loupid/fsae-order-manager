@@ -21,7 +21,7 @@ export default function PurchaserDashboard() {
     setLoading(true);
     try {
       const [allReqs, allPos] = await Promise.all([
-        apiClient.getPartRequests({ status: 'SUBMITTED' }),
+        apiClient.getPartRequests({ status: 'SUBMITTED,APPROVED' }),
         apiClient.getPurchaseOrders()
       ]);
       setUnassignedRequests(allReqs.filter(r => !r.po_id));
@@ -333,17 +333,43 @@ export default function PurchaserDashboard() {
                       </div>
                     </div>
 
-                    <span style={{
-                      padding: '0.25rem 0.6rem',
-                      borderRadius: '6px',
-                      fontSize: '0.75rem',
-                      fontWeight: '700',
-                      backgroundColor: po.status === 'COMPLETED' ? '#064e3b' : po.status === 'ORDERED' ? '#0c4a6e' : '#451a03',
-                      color: po.status === 'COMPLETED' ? '#34d399' : po.status === 'ORDERED' ? '#38bdf8' : '#fbbf24',
-                      border: `1px solid ${po.status === 'COMPLETED' ? '#059669' : po.status === 'ORDERED' ? '#0284c7' : '#d97706'}`
-                    }}>
-                      {po.status === 'COMPLETED' ? '✅ Reçu Complet' : po.status === 'ORDERED' ? '🚚 Commandé' : '🕒 En Attente'}
-                    </span>
+                    {(() => {
+                      let bg = '#451a03';
+                      let color = '#fbbf24';
+                      let border = '#d97706';
+                      let label = '🕒 En Attente';
+
+                      if (po.status === 'COMPLETED') {
+                        bg = '#064e3b';
+                        color = '#34d399';
+                        border = '#059669';
+                        label = '✅ Reçu Complet';
+                      } else if (po.status === 'ORDERED') {
+                        bg = '#0c4a6e';
+                        color = '#38bdf8';
+                        border = '#0284c7';
+                        label = '🚚 Commandé';
+                      } else if (po.status === 'CANCELLED') {
+                        bg = '#27171a';
+                        color = '#f87171';
+                        border = '#7f1d1d';
+                        label = '🚫 Annulé';
+                      }
+
+                      return (
+                        <span style={{
+                          padding: '0.25rem 0.6rem',
+                          borderRadius: '6px',
+                          fontSize: '0.75rem',
+                          fontWeight: '700',
+                          backgroundColor: bg,
+                          color: color,
+                          border: `1px solid ${border}`
+                        }}>
+                          {label}
+                        </span>
+                      );
+                    })()}
                   </div>
 
                   {/* Items preview */}
@@ -497,9 +523,14 @@ export default function PurchaserDashboard() {
 
                     {['PENDING', 'ORDERED'].includes(po.status) && (
                       <button
-                        onClick={() => {
+                        onClick={async () => {
                           if (window.confirm(`Voulez-vous vraiment annuler le bon de commande ${po.po_number} ?`)) {
-                            handleStatusTransition(po.id, 'CANCELLED');
+                            try {
+                              await apiClient.cancelPurchaseOrder(po.id);
+                              await loadData();
+                            } catch (err) {
+                              alert(err.message || "Erreur lors de l'annulation du PO");
+                            }
                           }
                         }}
                         title="Annuler le PO"

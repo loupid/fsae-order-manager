@@ -35,8 +35,15 @@ export function createRequestsRouter(db = defaultDb) {
         params.push(urgency_level);
       }
       if (status) {
-        sql += ` AND pr.status = ?`;
-        params.push(status);
+        const statuses = status.split(',').map(s => s.trim()).filter(Boolean);
+        if (statuses.length === 1) {
+          sql += ` AND pr.status = ?`;
+          params.push(statuses[0]);
+        } else if (statuses.length > 1) {
+          const placeholders = statuses.map(() => '?').join(',');
+          sql += ` AND pr.status IN (${placeholders})`;
+          params.push(...statuses);
+        }
       }
       if (supplier) {
         sql += ` AND pr.supplier LIKE ?`;
@@ -156,6 +163,148 @@ export function createRequestsRouter(db = defaultDb) {
       return res.status(200).json(request);
     } catch (err) {
       return res.status(500).json({ error: 'Failed to fetch part request: ' + err.message });
+    }
+  });
+
+  // PATCH /api/part-requests/:id — Edit part request (Owner, Purchaser, or Admin)
+  router.patch('/:id', authenticateToken, (req, res) => {
+    try {
+      const reqRow = db.prepare('SELECT * FROM part_requests WHERE id = ?').get(req.params.id);
+      if (!reqRow) {
+        return res.status(404).json({ error: 'Part request not found' });
+      }
+
+      const isOwner = reqRow.requester_id === req.user.id;
+      const isPrivileged = ['Purchaser', 'Admin'].includes(req.user.role);
+
+      if (!isOwner && !isPrivileged) {
+        return res.status(403).json({ error: 'Forbidden: You do not have permission to edit this request' });
+      }
+
+      if (!isPrivileged && (reqRow.po_id !== null || ['ORDERED', 'RECEIVED'].includes(reqRow.status))) {
+        return res.status(400).json({ error: 'Cannot edit part request that is already assigned to a purchase order or received' });
+      }
+
+      const {
+        subsystem_id,
+        supplier,
+        sku,
+        url,
+        description,
+        quantity,
+        unit_price_est,
+        urgency_level,
+        status
+      } = req.body;
+
+      const updates = [];
+      const params = [];
+
+      if (subsystem_id !== undefined) {
+        const subId = Number(subsystem_id);
+        const sub = db.prepare('SELECT id FROM subsystems WHERE id = ?').get(subId);
+        if (!sub) {
+          return res.status(400).json({ error: 'Invalid subsystem_id' });
+        }
+        updates.push('subsystem_id = ?');
+        params.push(subId);
+      }
+
+      if (supplier !== undefined) {
+        if (!supplier || !supplier.trim()) {
+          return res.status(400).json({ error: 'Supplier cannot be empty' });
+        }
+        updates.push('supplier = ?');
+        params.push(supplier.trim());
+      }
+
+      if (sku !== undefined) {
+        if (!sku || !sku.trim()) {
+          return res.status(400).json({ error: 'SKU cannot be empty' });
+        }
+        updates.push('sku = ?');
+        params.push(sku.trim());
+      }
+
+      if (url !== undefined) {
+        updates.push('url = ?');
+        params.push(url ? url.trim() : null);
+      }
+
+      if (description !== undefined) {
+        if (!description || !description.trim()) {
+          return res.status(400).json({ error: 'Description cannot be empty' });
+        }
+        updates.push('description = ?');
+        params.push(description.trim());
+      }
+
+      if (quantity !== undefined) {
+        const qty = parseInt(quantity, 10);
+        if (isNaN(qty) || qty <= 0) {
+          return res.status(400).json({ error: 'Quantity must be greater than 0' });
+        }
+        updates.push('quantity = ?');
+        params.push(qty);
+      }
+
+      if (unit_price_est !== undefined) {
+        const price = parseFloat(unit_price_est);
+        if (isNaN(price) || price < 0) {
+          return res.status(400).json({ error: 'Unit price must be >= 0' });
+        }
+        updates.push('unit_price_est = ?');
+        params.push(price);
+      }
+
+      if (urgency_level !== undefined) {
+        if (!['NORMAL', 'URGENT', 'CRITICAL'].includes(urgency_level)) {
+          return res.status(400).json({ error: 'Invalid urgency_level' });
+        }
+        updates.push('urgency_level = ?');
+        params.push(urgency_level);
+      }
+
+      if (status !== undefined) {
+        const validStatuses = isPrivileged
+          ? ['DRAFT', 'SUBMITTED', 'APPROVED', 'ORDERED', 'RECEIVED', 'REJECTED']
+          : ['DRAFT', 'SUBMITTED'];
+        if (!validStatuses.includes(status)) {
+          return res.status(400).json({ error: `Invalid status: ${status}` });
+        }
+        updates.push('status = ?');
+        params.push(status);
+      } else if (!isPrivileged && reqRow.status === 'APPROVED') {
+        // Any modification by requester to an approved request requires re-approval
+        updates.push('status = ?');
+        params.push('SUBMITTED');
+      }
+
+      if (updates.length === 0) {
+        return res.status(400).json({ error: 'No valid fields provided for update' });
+      }
+
+      updates.push('updated_at = CURRENT_TIMESTAMP');
+      params.push(req.params.id);
+
+      db.prepare(`
+        UPDATE part_requests 
+        SET ${updates.join(', ')} 
+        WHERE id = ?
+      `).run(...params);
+
+      const updated = db.prepare(`
+        SELECT pr.*, u.name AS requester_name, u.email AS requester_email, s.name AS subsystem_name, s.code AS subsystem_code, po.po_number
+        FROM part_requests pr
+        JOIN users u ON pr.requester_id = u.id
+        JOIN subsystems s ON pr.subsystem_id = s.id
+        LEFT JOIN purchase_orders po ON pr.po_id = po.id
+        WHERE pr.id = ?
+      `).get(req.params.id);
+
+      return res.status(200).json(updated);
+    } catch (err) {
+      return res.status(500).json({ error: 'Failed to update part request: ' + err.message });
     }
   });
 

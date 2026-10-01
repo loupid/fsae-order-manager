@@ -373,6 +373,7 @@ export default function MemberFunnelView() {
         onClose={() => setIsModalOpen(false)}
         onCreated={handleCreated}
         subsystems={subsystems}
+        currentUser={user}
       />
     </div>
   );

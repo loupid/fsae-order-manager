@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../api/client';
 import { useAuth } from '../context/AuthContext';
-import { BarChart3, DollarSign, PieChart, ShieldCheck, AlertTriangle, Plus, Check } from 'lucide-react';
+import { BarChart3, DollarSign, PieChart, ShieldCheck, AlertTriangle, Plus, Check, Pencil, X, Trash2 } from 'lucide-react';
 
 export default function CostReportView() {
   const { isAdmin } = useAuth();
@@ -14,6 +14,15 @@ export default function CostReportView() {
   const [newCode, setNewCode] = useState('');
   const [newBudget, setNewBudget] = useState('');
   const [creating, setCreating] = useState(false);
+
+  // Edit subsystem modal / form state
+  const [editingSubsystem, setEditingSubsystem] = useState(null);
+  const [editBudget, setEditBudget] = useState('');
+  const [editName, setEditName] = useState('');
+  const [editCode, setEditCode] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [deletingSubsystem, setDeletingSubsystem] = useState(false);
+  const [editError, setEditError] = useState('');
 
   const loadSubsystems = async () => {
     setLoading(true);
@@ -54,6 +63,70 @@ export default function CostReportView() {
     }
   };
 
+  const handleOpenEdit = (sub) => {
+    setEditingSubsystem(sub);
+    setEditBudget(String(sub.budget_allocated));
+    setEditName(sub.name);
+    setEditCode(sub.code);
+    setEditError('');
+  };
+
+  const handleSaveEdit = async (e) => {
+    e.preventDefault();
+    if (!editingSubsystem) return;
+
+    const parsed = parseFloat(editBudget);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      setEditError('Le budget alloué doit être un nombre positif ou nul.');
+      return;
+    }
+
+    if (!editCode.trim()) {
+      setEditError('Le code du sous-système ne peut pas être vide.');
+      return;
+    }
+
+    if (!editName.trim()) {
+      setEditError('Le nom du sous-système ne peut pas être vide.');
+      return;
+    }
+
+    setSavingEdit(true);
+    setEditError('');
+    try {
+      await apiClient.updateSubsystem(editingSubsystem.id, {
+        budget_allocated: parsed,
+        name: editName.trim(),
+        code: editCode.trim().toUpperCase()
+      });
+      setEditingSubsystem(null);
+      await loadSubsystems();
+    } catch (err) {
+      setEditError(err.message || 'Erreur lors de la mise à jour du sous-système');
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const handleDeleteSubsystem = async () => {
+    if (!editingSubsystem) return;
+    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer définitivement le sous-système [${editingSubsystem.code}] ${editingSubsystem.name} ?`)) {
+      return;
+    }
+
+    setDeletingSubsystem(true);
+    setEditError('');
+    try {
+      await apiClient.deleteSubsystem(editingSubsystem.id);
+      setEditingSubsystem(null);
+      await loadSubsystems();
+    } catch (err) {
+      setEditError(err.message || 'Erreur lors de la suppression du sous-système');
+    } finally {
+      setDeletingSubsystem(false);
+    }
+  };
+
   // Aggregates
   const totalBudgetAllocated = subsystems.reduce((sum, s) => sum + (s.budget_allocated || 0), 0);
   const totalCommittedCost = subsystems.reduce((sum, s) => sum + (s.committed_cost || 0), 0);
@@ -72,7 +145,7 @@ export default function CostReportView() {
             Formule SAE <span style={{ color: '#10b981' }}>UQTR</span> — Rapport de Coûts & Budgets
           </h2>
           <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: 0 }}>
-            Suivi financier en direct des dépenses engagées et réelles des 5 Teams de la monoplace électrique.
+            Suivi financier en direct des dépenses engagées et réelles des {subsystems.length} Teams de la monoplace électrique.
           </p>
         </div>
 
@@ -200,6 +273,7 @@ export default function CostReportView() {
                 <th style={{ padding: '0.85rem 1.25rem', textAlign: 'right' }}>Réalisé</th>
                 <th style={{ padding: '0.85rem 1.25rem', textAlign: 'right' }}>Restant</th>
                 <th style={{ padding: '0.85rem 1.25rem', minWidth: '180px' }}>Consommation</th>
+                {isAdmin && <th style={{ padding: '0.85rem 1.25rem', textAlign: 'center', width: '100px' }}>Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -257,6 +331,30 @@ export default function CostReportView() {
                         </span>
                       </div>
                     </td>
+                    {isAdmin && (
+                      <td style={{ padding: '0.85rem 1.25rem', textAlign: 'center' }}>
+                        <button
+                          onClick={() => handleOpenEdit(s)}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.35rem',
+                            padding: '0.35rem 0.65rem',
+                            backgroundColor: '#1e293b',
+                            border: '1px solid #334155',
+                            borderRadius: '6px',
+                            color: '#38bdf8',
+                            fontSize: '0.75rem',
+                            fontWeight: '600',
+                            cursor: 'pointer'
+                          }}
+                          title={`Modifier le budget de [${s.code}] ${s.name}`}
+                        >
+                          <Pencil style={{ width: '13px', height: '13px' }} />
+                          <span>Modifier</span>
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 );
               })}
@@ -350,6 +448,143 @@ export default function CostReportView() {
                 >
                   {creating ? 'Création...' : 'Créer'}
                 </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Subsystem Modal */}
+      {editingSubsystem && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.75)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 50,
+          padding: '1rem'
+        }}>
+          <div style={{
+            backgroundColor: '#161920',
+            border: '1px solid #2d3342',
+            borderRadius: '12px',
+            width: '100%',
+            maxWidth: '450px',
+            padding: '1.5rem'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#f8fafc', margin: 0 }}>
+                Modifier Budget : [{editingSubsystem.code}]
+              </h3>
+              <button
+                onClick={() => setEditingSubsystem(null)}
+                style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '0.2rem' }}
+              >
+                <X style={{ width: '18px', height: '18px' }} />
+              </button>
+            </div>
+
+            {editError && (
+              <div style={{
+                backgroundColor: '#451a1a',
+                border: '1px solid #dc2626',
+                color: '#f87171',
+                padding: '0.65rem 0.85rem',
+                borderRadius: '6px',
+                fontSize: '0.82rem',
+                marginBottom: '1rem'
+              }}>
+                {editError}
+              </div>
+            )}
+
+            <form onSubmit={handleSaveEdit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '0.75rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: '#cbd5e1', marginBottom: '0.35rem' }}>
+                    Code (Trigramme) *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    maxLength={10}
+                    value={editCode}
+                    onChange={(e) => setEditCode(e.target.value.toUpperCase())}
+                    style={{ width: '100%', padding: '0.6rem', backgroundColor: '#0f1115', border: '1px solid #334155', borderRadius: '6px', color: '#f8fafc', fontSize: '0.85rem', fontWeight: '700', boxSizing: 'border-box' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: '#cbd5e1', marginBottom: '0.35rem' }}>
+                    Nom du Sous-système *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    style={{ width: '100%', padding: '0.6rem', backgroundColor: '#0f1115', border: '1px solid #334155', borderRadius: '6px', color: '#f8fafc', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: '#cbd5e1', marginBottom: '0.35rem' }}>
+                  Budget Alloué ($ CAD) *
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  required
+                  value={editBudget}
+                  onChange={(e) => setEditBudget(e.target.value)}
+                  style={{ width: '100%', padding: '0.6rem', backgroundColor: '#0f1115', border: '1px solid #334155', borderRadius: '6px', color: '#f8fafc', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <button
+                  type="button"
+                  onClick={handleDeleteSubsystem}
+                  disabled={deletingSubsystem || savingEdit}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    padding: '0.55rem 0.85rem',
+                    borderRadius: '6px',
+                    border: '1px solid #7f1d1d',
+                    backgroundColor: '#451a1a',
+                    color: '#f87171',
+                    fontWeight: '600',
+                    fontSize: '0.82rem',
+                    cursor: (deletingSubsystem || savingEdit) ? 'not-allowed' : 'pointer'
+                  }}
+                  title="Supprimer ce sous-système (si aucune pièce n'est associée)"
+                >
+                  <Trash2 style={{ width: '14px', height: '14px' }} />
+                  <span>{deletingSubsystem ? 'Suppression...' : 'Supprimer'}</span>
+                </button>
+
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => setEditingSubsystem(null)}
+                    style={{ padding: '0.55rem 1rem', borderRadius: '6px', border: '1px solid #334155', backgroundColor: 'transparent', color: '#cbd5e1', fontWeight: '600', fontSize: '0.85rem', cursor: 'pointer' }}
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingEdit || deletingSubsystem}
+                    style={{ padding: '0.55rem 1.25rem', borderRadius: '6px', border: 'none', backgroundColor: '#0284c7', color: '#fff', fontWeight: '700', fontSize: '0.85rem', cursor: (savingEdit || deletingSubsystem) ? 'not-allowed' : 'pointer' }}
+                  >
+                    {savingEdit ? 'Enregistrement...' : 'Enregistrer'}
+                  </button>
+                </div>
               </div>
             </form>
           </div>

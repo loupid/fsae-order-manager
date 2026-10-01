@@ -29,39 +29,53 @@ export function createAuthRouter(db = defaultDb) {
         return res.status(400).json({ error: 'Password must be at least 3 characters' });
       }
 
-      const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get().count;
-      const isFirstUser = userCount === 0;
-      const assignedRole = isFirstUser ? 'Admin' : (['Member', 'Purchaser', 'Admin'].includes(role) ? role : 'Member');
+      const registerTx = db.transaction(() => {
+        const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get().count;
+        const isFirstUser = userCount === 0;
+        const assignedRole = isFirstUser ? 'Admin' : 'Member';
 
-      const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email.trim().toLowerCase());
-      if (existing) {
-        return res.status(409).json({ error: 'Email already registered' });
+        const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email.trim().toLowerCase());
+        if (existing) {
+          const err = new Error('Email already registered');
+          err.statusCode = 409;
+          throw err;
+        }
+
+        const password_hash = bcrypt.hashSync(password, 10);
+        const result = db.prepare(`
+          INSERT INTO users (name, email, password_hash, role, department, subsystem, discord_handle, tshirt_size)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          name.trim(),
+          email.trim().toLowerCase(),
+          password_hash,
+          assignedRole,
+          department ? department.trim() : null,
+          subsystem ? subsystem.trim() : null,
+          discord_handle ? discord_handle.trim() : null,
+          tshirt_size ? tshirt_size.trim() : null
+        );
+
+        return {
+          id: Number(result.lastInsertRowid),
+          name: name.trim(),
+          email: email.trim().toLowerCase(),
+          role: assignedRole,
+          department: department ? department.trim() : null,
+          subsystem: subsystem ? subsystem.trim() : null,
+          discord_handle: discord_handle ? discord_handle.trim() : null
+        };
+      });
+
+      let user;
+      try {
+        user = registerTx();
+      } catch (err) {
+        if (err.statusCode === 409 || (err.message && err.message.includes('UNIQUE constraint failed'))) {
+          return res.status(409).json({ error: 'Email already registered' });
+        }
+        throw err;
       }
-
-      const password_hash = bcrypt.hashSync(password, 10);
-      const result = db.prepare(`
-        INSERT INTO users (name, email, password_hash, role, department, subsystem, discord_handle, tshirt_size)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
-        name.trim(),
-        email.trim().toLowerCase(),
-        password_hash,
-        assignedRole,
-        department ? department.trim() : null,
-        subsystem ? subsystem.trim() : null,
-        discord_handle ? discord_handle.trim() : null,
-        tshirt_size ? tshirt_size.trim() : null
-      );
-
-      const user = {
-        id: Number(result.lastInsertRowid),
-        name: name.trim(),
-        email: email.trim().toLowerCase(),
-        role: assignedRole,
-        department: department ? department.trim() : null,
-        subsystem: subsystem ? subsystem.trim() : null,
-        discord_handle: discord_handle ? discord_handle.trim() : null
-      };
 
       const token = generateToken(user);
       return res.status(201).json({ token, user });

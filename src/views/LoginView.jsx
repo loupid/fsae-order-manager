@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { apiClient } from '../api/client';
 import {
   Lock,
   Mail,
@@ -14,10 +15,8 @@ import {
   ChevronRight
 } from 'lucide-react';
 
-const UQTR_DEPARTMENTS = [
-  {
-    code: 'ELE',
-    name: 'Team Électrique',
+const DEPT_METADATA = {
+  ELE: {
     icon: '⚡',
     badgeColor: '#10b981',
     bgColor: '#064e3b33',
@@ -25,9 +24,7 @@ const UQTR_DEPARTMENTS = [
     description: 'Accumulateur HV, BMS, Onduleur, Low-Voltage, Télémétrie & ECU',
     suggestions: ['BMS & Accu Haute Tension', 'Télémétrie & Capteurs CAN', 'Conception PCB (JLCPCB/LCSC)', 'Faisceau Basse Tension', 'Onduleur & Contrôle Moteur']
   },
-  {
-    code: 'STR',
-    name: 'Team Structure',
+  STR: {
     icon: '🦾',
     badgeColor: '#38bdf8',
     bgColor: '#0c4a6e33',
@@ -35,9 +32,7 @@ const UQTR_DEPARTMENTS = [
     description: 'Châssis tubulaire/monocoque, Aérodynamique carbone, Crashbox',
     suggestions: ['Châssis tubulaire', 'Aérodynamisme & Ailerons', 'Matériaux composites carbone', 'Crashbox & Absorption', 'Conception CAO SolidWorks']
   },
-  {
-    code: 'DRI',
-    name: 'Team Drivetrain',
+  DRI: {
     icon: '🏎️',
     badgeColor: '#f97316',
     bgColor: '#7c2d1233',
@@ -45,9 +40,7 @@ const UQTR_DEPARTMENTS = [
     description: 'Moteur électrique, Transmission planétaire, Refroidissement, Différentiel',
     suggestions: ['Moteur électrique synchrone', 'Transmission & Réducteur', 'Circuit de refroidissement liquide', 'Différentiel & Arbres de roues']
   },
-  {
-    code: 'ERG',
-    name: 'Team Ergonomie',
+  ERG: {
     icon: '💺',
     badgeColor: '#ec4899',
     bgColor: '#83184333',
@@ -55,9 +48,7 @@ const UQTR_DEPARTMENTS = [
     description: 'Volant multifonction, Pédalier réglable, Harnais, Siège pilote',
     suggestions: ['Volant multifonction', 'Pédalier réglable en atelier', 'Moulage siège fibre de carbone', 'Position de pilotage & Sécurité']
   },
-  {
-    code: 'ADM',
-    name: 'Team Administration',
+  ADM: {
     icon: '📊',
     badgeColor: '#a855f7',
     bgColor: '#581c8733',
@@ -65,6 +56,23 @@ const UQTR_DEPARTMENTS = [
     description: 'Gestion de projet, Budget global, Commandes, Sponsoring, Cost Report',
     suggestions: ['Gestion des commandes de pièces', 'Relations commanditaires & Sponsors', 'Cost Report & Finances FSAE', 'Communication & Événements']
   }
+};
+
+const DEFAULT_DEPT_METADATA = {
+  icon: '🔧',
+  badgeColor: '#94a3b8',
+  bgColor: '#1e293b33',
+  borderColor: '#475569',
+  description: 'Pôle technique & Ingénierie FSAE',
+  suggestions: ['Conception & Simulation', 'Fabrication & Usinage', 'Tests & Validation']
+};
+
+const INITIAL_DEPARTMENTS = [
+  { code: 'ELE', name: 'Team Électrique', ...DEPT_METADATA.ELE },
+  { code: 'STR', name: 'Team Structure', ...DEPT_METADATA.STR },
+  { code: 'DRI', name: 'Team Drivetrain', ...DEPT_METADATA.DRI },
+  { code: 'ERG', name: 'Team Ergonomie', ...DEPT_METADATA.ERG },
+  { code: 'ADM', name: 'Team Administration', ...DEPT_METADATA.ADM }
 ];
 
 export default function LoginView() {
@@ -74,6 +82,7 @@ export default function LoginView() {
   const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [isCleanInstall, setIsCleanInstall] = useState(false);
   const [step, setStep] = useState(1); // 1, 2, 3
+  const [departments, setDepartments] = useState(INITIAL_DEPARTMENTS);
 
   React.useEffect(() => {
     fetch('/api/auth/setup-status')
@@ -85,6 +94,31 @@ export default function LoginView() {
         }
       })
       .catch(() => {});
+
+    apiClient.getPublicSubsystems()
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          const dynamicDepts = data.map((sub) => {
+            const meta = DEPT_METADATA[sub.code] || DEFAULT_DEPT_METADATA;
+            return {
+              id: sub.id,
+              code: sub.code,
+              name: sub.name,
+              icon: meta.icon,
+              badgeColor: meta.badgeColor,
+              bgColor: meta.bgColor,
+              borderColor: meta.borderColor,
+              description: meta.description,
+              suggestions: meta.suggestions || []
+            };
+          });
+          setDepartments(dynamicDepts);
+          setDepartment((prev) => (dynamicDepts.some(d => d.code === prev) ? prev : dynamicDepts[0].code));
+        }
+      })
+      .catch((err) => {
+        console.warn('Failed to load public subsystems, using defaults:', err.message);
+      });
   }, []);
 
   // Champs du formulaire & questionnaire
@@ -102,7 +136,7 @@ export default function LoginView() {
   // Détection du courriel officiel UQTR
   const isUqtrEmail = email.trim().toLowerCase().endsWith('@uqtr.ca');
 
-  const selectedDeptObj = UQTR_DEPARTMENTS.find(d => d.code === department) || UQTR_DEPARTMENTS[0];
+  const selectedDeptObj = departments.find(d => d.code === department) || departments[0] || INITIAL_DEPARTMENTS[0];
 
   const handleNextStep = (e) => {
     e.preventDefault();
@@ -420,7 +454,7 @@ export default function LoginView() {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-                  {UQTR_DEPARTMENTS.map((dept) => {
+                  {departments.map((dept) => {
                     const isSelected = department === dept.code;
                     return (
                       <div
@@ -546,7 +580,7 @@ export default function LoginView() {
                     Spécialité / Sous-système visé
                   </label>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginBottom: '0.5rem' }}>
-                    {selectedDeptObj.suggestions.map((sug, idx) => (
+                    {(selectedDeptObj?.suggestions || []).map((sug, idx) => (
                       <button
                         key={idx}
                         type="button"
@@ -570,7 +604,7 @@ export default function LoginView() {
                     type="text"
                     value={subsystem}
                     onChange={(e) => setSubsystem(e.target.value)}
-                    placeholder={`ex: ${selectedDeptObj.suggestions[0]}`}
+                    placeholder={selectedDeptObj?.suggestions?.[0] ? `ex: ${selectedDeptObj.suggestions[0]}` : 'ex: Conception & Usinage'}
                     style={{
                       width: '100%',
                       padding: '0.65rem 0.85rem',
