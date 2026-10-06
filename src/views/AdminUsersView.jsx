@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { apiClient } from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { useIsMobile } from '../utils/useMediaQuery';
 import {
   Users,
   Shield,
@@ -25,6 +26,7 @@ const DEPARTMENTS = [
 
 export default function AdminUsersView() {
   const { user: currentUser, refreshUser } = useAuth();
+  const isMobile = useIsMobile(768);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState(null);
@@ -153,12 +155,24 @@ export default function AdminUsersView() {
     }
   };
 
+  // Department color helper
+  const getDeptColor = (code) => {
+    switch (code) {
+      case 'ELE': return '#10b981';
+      case 'STR': return '#38bdf8';
+      case 'DRI': return '#f97316';
+      case 'ERG': return '#ec4899';
+      case 'ADM': return '#a855f7';
+      default: return '#94a3b8';
+    }
+  };
+
   return (
-    <div style={{ padding: '1.5rem 2rem', maxWidth: '1440px', margin: '0 auto' }}>
+    <div style={{ padding: isMobile ? '1rem' : '1.5rem 2rem', maxWidth: '1440px', margin: '0 auto' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#f8fafc', margin: '0 0 0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <h2 style={{ fontSize: isMobile ? '1.25rem' : '1.4rem', fontWeight: '800', color: '#f8fafc', margin: '0 0 0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             👥 Gestion Équipe & Accès <span style={{ color: '#10b981', fontSize: '1rem', fontWeight: '700' }}>• FSAE UQTR</span>
           </h2>
           <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: 0 }}>
@@ -180,7 +194,8 @@ export default function AdminUsersView() {
             borderRadius: '8px',
             fontSize: '0.82rem',
             fontWeight: '600',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            minHeight: '38px'
           }}
         >
           <RefreshCw style={{ width: '15px', height: '15px', animation: loading ? 'spin 1s linear infinite' : 'none' }} />
@@ -220,61 +235,61 @@ export default function AdminUsersView() {
         </div>
       )}
 
-      {/* KPI Cards */}
+      {/* KPI Cards (2x2 grid on mobile) */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-        gap: '1rem',
+        gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(220px, 1fr))',
+        gap: isMobile ? '0.75rem' : '1rem',
         marginBottom: '1.5rem'
       }}>
         {/* Total */}
-        <div style={{ backgroundColor: '#161920', border: '1px solid #232733', borderRadius: '12px', padding: '1.15rem' }}>
+        <div style={{ backgroundColor: '#161920', border: '1px solid #232733', borderRadius: '12px', padding: isMobile ? '0.85rem' : '1.15rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-            <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase' }}>
-              Membres Inscrits
+            <span style={{ fontSize: '0.72rem', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase' }}>
+              Membres
             </span>
-            <Users style={{ width: '18px', height: '18px', color: '#94a3b8' }} />
+            <Users style={{ width: '16px', height: '16px', color: '#94a3b8' }} />
           </div>
-          <div style={{ fontSize: '1.6rem', fontWeight: '900', color: '#f8fafc' }}>
+          <div style={{ fontSize: isMobile ? '1.35rem' : '1.6rem', fontWeight: '900', color: '#f8fafc' }}>
             {stats.total}
           </div>
         </div>
 
         {/* Admins */}
-        <div style={{ backgroundColor: '#161920', border: '1px solid #232733', borderRadius: '12px', padding: '1.15rem' }}>
+        <div style={{ backgroundColor: '#161920', border: '1px solid #232733', borderRadius: '12px', padding: isMobile ? '0.85rem' : '1.15rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-            <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#c084fc', textTransform: 'uppercase' }}>
-              Administrateurs
+            <span style={{ fontSize: '0.72rem', fontWeight: '700', color: '#c084fc', textTransform: 'uppercase' }}>
+              Admins
             </span>
-            <Shield style={{ width: '18px', height: '18px', color: '#a855f7' }} />
+            <Shield style={{ width: '16px', height: '16px', color: '#a855f7' }} />
           </div>
-          <div style={{ fontSize: '1.6rem', fontWeight: '900', color: '#c084fc' }}>
+          <div style={{ fontSize: isMobile ? '1.35rem' : '1.6rem', fontWeight: '900', color: '#c084fc' }}>
             {stats.admins}
           </div>
         </div>
 
         {/* Leads */}
-        <div style={{ backgroundColor: '#161920', border: '1px solid #232733', borderRadius: '12px', padding: '1.15rem' }}>
+        <div style={{ backgroundColor: '#161920', border: '1px solid #232733', borderRadius: '12px', padding: isMobile ? '0.85rem' : '1.15rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-            <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#60a5fa', textTransform: 'uppercase' }}>
-              Chefs d'Équipe
+            <span style={{ fontSize: '0.72rem', fontWeight: '700', color: '#60a5fa', textTransform: 'uppercase' }}>
+              Chefs Pôle
             </span>
-            <Zap style={{ width: '18px', height: '18px', color: '#38bdf8' }} />
+            <Zap style={{ width: '16px', height: '16px', color: '#38bdf8' }} />
           </div>
-          <div style={{ fontSize: '1.6rem', fontWeight: '900', color: '#60a5fa' }}>
+          <div style={{ fontSize: isMobile ? '1.35rem' : '1.6rem', fontWeight: '900', color: '#60a5fa' }}>
             {stats.leads}
           </div>
         </div>
 
         {/* Regular Members */}
-        <div style={{ backgroundColor: '#161920', border: '1px solid #232733', borderRadius: '12px', padding: '1.15rem' }}>
+        <div style={{ backgroundColor: '#161920', border: '1px solid #232733', borderRadius: '12px', padding: isMobile ? '0.85rem' : '1.15rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-            <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase' }}>
-              Membres Réguliers
+            <span style={{ fontSize: '0.72rem', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase' }}>
+              Réguliers
             </span>
-            <User style={{ width: '18px', height: '18px', color: '#64748b' }} />
+            <User style={{ width: '16px', height: '16px', color: '#64748b' }} />
           </div>
-          <div style={{ fontSize: '1.6rem', fontWeight: '900', color: '#cbd5e1' }}>
+          <div style={{ fontSize: isMobile ? '1.35rem' : '1.6rem', fontWeight: '900', color: '#cbd5e1' }}>
             {stats.members}
           </div>
         </div>
@@ -313,7 +328,7 @@ export default function AdminUsersView() {
         border: '1px solid #232733'
       }}>
         {/* Search */}
-        <div style={{ position: 'relative', flex: '1 1 240px', minWidth: '220px' }}>
+        <div style={{ position: 'relative', flex: '1 1 240px', minWidth: isMobile ? '100%' : '220px' }}>
           <Search style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', width: '16px', height: '16px', color: '#64748b' }} />
           <input
             type="text"
@@ -327,80 +342,257 @@ export default function AdminUsersView() {
               border: '1px solid #334155',
               borderRadius: '6px',
               color: '#f8fafc',
-              fontSize: '0.82rem',
+              fontSize: '0.85rem',
               boxSizing: 'border-box'
             }}
           />
         </div>
 
-        {/* Role Filter */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '600' }}>Rôle :</span>
-          <select
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
-            style={{
-              padding: '0.55rem 0.75rem',
-              backgroundColor: '#0f1115',
-              border: '1px solid #334155',
-              borderRadius: '6px',
-              color: '#f8fafc',
-              fontSize: '0.82rem'
-            }}
-          >
-            <option value="ALL">Tous les rôles</option>
-            <option value="Admin">Admin</option>
-            <option value="Lead">Chef d'équipe</option>
-            <option value="Member">Membre</option>
-          </select>
-        </div>
+        {/* Filter Dropdowns */}
+        <div style={{ display: 'flex', gap: '0.5rem', width: isMobile ? '100%' : 'auto', flexWrap: 'wrap' }}>
+          {/* Role Filter */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flex: isMobile ? '1 1 45%' : 'none' }}>
+            <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '600' }}>Rôle :</span>
+            <select
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+              style={{
+                width: isMobile ? '100%' : 'auto',
+                padding: '0.55rem 0.75rem',
+                backgroundColor: '#0f1115',
+                border: '1px solid #334155',
+                borderRadius: '6px',
+                color: '#f8fafc',
+                fontSize: '0.82rem'
+              }}
+            >
+              <option value="ALL">Tous</option>
+              <option value="Admin">Admin</option>
+              <option value="Lead">Chef d'équipe</option>
+              <option value="Member">Membre</option>
+            </select>
+          </div>
 
-        {/* Department Filter */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '600' }}>Pôle :</span>
-          <select
-            value={deptFilter}
-            onChange={(e) => setDeptFilter(e.target.value)}
-            style={{
-              padding: '0.55rem 0.75rem',
-              backgroundColor: '#0f1115',
-              border: '1px solid #334155',
-              borderRadius: '6px',
-              color: '#f8fafc',
-              fontSize: '0.82rem'
-            }}
-          >
-            <option value="ALL">Tous les pôles</option>
-            {DEPARTMENTS.map(d => (
-              <option key={d.code} value={d.code}>{d.code} — {d.name}</option>
-            ))}
-          </select>
+          {/* Department Filter */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flex: isMobile ? '1 1 45%' : 'none' }}>
+            <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '600' }}>Pôle :</span>
+            <select
+              value={deptFilter}
+              onChange={(e) => setDeptFilter(e.target.value)}
+              style={{
+                width: isMobile ? '100%' : 'auto',
+                padding: '0.55rem 0.75rem',
+                backgroundColor: '#0f1115',
+                border: '1px solid #334155',
+                borderRadius: '6px',
+                color: '#f8fafc',
+                fontSize: '0.82rem'
+              }}
+            >
+              <option value="ALL">Tous</option>
+              {DEPARTMENTS.map(d => (
+                <option key={d.code} value={d.code}>{d.code}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
-      {/* Users Table */}
-      <div style={{
-        backgroundColor: '#161920',
-        border: '1px solid #232733',
-        borderRadius: '12px',
-        overflow: 'hidden'
-      }}>
-        <div style={{ padding: '0.85rem 1.25rem', borderBottom: '1px solid #232733', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontWeight: '700', color: '#f8fafc', fontSize: '0.92rem' }}>
-            Membres de l'équipe ({filteredUsers.length} affiché{filteredUsers.length > 1 ? 's' : ''})
-          </span>
+      {/* Users List: Mobile Cards or Desktop Table */}
+      {loading ? (
+        <div style={{ padding: '3rem', textAlign: 'center', color: '#94a3b8', backgroundColor: '#161920', borderRadius: '12px' }}>
+          <div style={{ width: '32px', height: '32px', border: '3px solid #334155', borderTopColor: '#10b981', borderRadius: '50%', margin: '0 auto 1rem', animation: 'spin 1s linear infinite' }} />
+          Chargement des utilisateurs...
         </div>
+      ) : filteredUsers.length === 0 ? (
+        <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b', backgroundColor: '#161920', borderRadius: '12px' }}>
+          Aucun utilisateur ne correspond aux critères de recherche.
+        </div>
+      ) : isMobile ? (
+        /* Mobile Member Cards */
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          {filteredUsers.map(u => {
+            const isCurrent = currentUser?.id === u.id;
+            const isBusy = updatingId === u.id;
+            const canEditBudgets = u.role === 'Admin' || ((u.role === 'Lead' || u.role === 'Purchaser') && (u.department === 'ADM' || u.department === 'Team Administration'));
 
-        {loading ? (
-          <div style={{ padding: '3rem', textAlign: 'center', color: '#94a3b8' }}>
-            <div style={{ width: '32px', height: '32px', border: '3px solid #334155', borderTopColor: '#10b981', borderRadius: '50%', margin: '0 auto 1rem', animation: 'spin 1s linear infinite' }} />
-            Chargement des utilisateurs...
+            return (
+              <div key={u.id} style={{
+                backgroundColor: '#161920',
+                border: isCurrent ? '1px solid #1e3a8a' : '1px solid #232733',
+                borderRadius: '10px',
+                padding: '1rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.75rem'
+              }}>
+                {/* Header: User avatar, name, email, delete */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                    <div style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '8px',
+                      backgroundColor: '#1e293b',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: '700',
+                      color: '#94a3b8',
+                      fontSize: '0.9rem'
+                    }}>
+                      {u.name?.charAt(0)?.toUpperCase() || 'U'}
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: '700', color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.92rem' }}>
+                        {u.name}
+                        {isCurrent && (
+                          <span style={{ fontSize: '0.65rem', padding: '0.1rem 0.35rem', borderRadius: '4px', backgroundColor: '#064e3b', color: '#6ee7b7' }}>
+                            Vous
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                        {u.email}
+                      </div>
+                    </div>
+                  </div>
+
+                  {!isCurrent ? (
+                    <button
+                      onClick={() => setUserToDelete(u)}
+                      disabled={isBusy}
+                      title={`Supprimer ${u.name}`}
+                      style={{
+                        background: 'transparent',
+                        border: '1px solid #7f1d1d',
+                        color: '#f87171',
+                        borderRadius: '6px',
+                        minWidth: '44px',
+                        minHeight: '44px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      <Trash2 style={{ width: '16px', height: '16px' }} />
+                    </button>
+                  ) : (
+                    <span style={{ fontSize: '0.72rem', color: '#64748b' }}>—</span>
+                  )}
+                </div>
+
+                {/* Meta details: Discord & Subsystem */}
+                <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', fontSize: '0.75rem' }}>
+                  <span style={{ color: '#94a3b8' }}>
+                    Sous-système : <strong style={{ color: '#cbd5e1' }}>{u.subsystem || 'Général'}</strong>
+                  </span>
+                  {u.discord_handle && (
+                    <span style={{ padding: '0.15rem 0.4rem', borderRadius: '4px', backgroundColor: '#1e1b4b', color: '#818cf8', border: '1px solid #4338ca' }}>
+                      @{u.discord_handle.replace(/^@/, '')}
+                    </span>
+                  )}
+                  {canEditBudgets && (
+                    <span style={{ fontSize: '0.68rem', padding: '0.15rem 0.4rem', borderRadius: '4px', backgroundColor: '#064e3b', color: '#a7f3d0', border: '1px solid #059669' }}>
+                      💰 Budget Éditeur
+                    </span>
+                  )}
+                </div>
+
+                {/* Form controls: Department & Role */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid #1c202a' }}>
+                  {/* Department Select */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.7rem', color: '#94a3b8', marginBottom: '0.2rem', fontWeight: '600' }}>
+                      Pôle FSAE
+                    </label>
+                    <select
+                      disabled={isBusy}
+                      value={u.department || ''}
+                      onChange={(e) => handleDepartmentChange(u, e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.45rem 0.5rem',
+                        backgroundColor: '#0f1115',
+                        border: `1px solid ${u.department ? getDeptColor(u.department) + '55' : '#334155'}`,
+                        borderRadius: '6px',
+                        color: u.department ? getDeptColor(u.department) : '#94a3b8',
+                        fontSize: '0.8rem',
+                        fontWeight: '600',
+                        minHeight: '44px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <option value="">Non assigné</option>
+                      {DEPARTMENTS.map(d => (
+                        <option key={d.code} value={d.code}>{d.code} — {d.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Role Select */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.7rem', color: '#94a3b8', marginBottom: '0.2rem', fontWeight: '600' }}>
+                      Rôle & Accès
+                    </label>
+                    <select
+                      disabled={isBusy || (isCurrent && u.role === 'Admin')}
+                      value={u.role === 'Purchaser' ? 'Lead' : u.role}
+                      onChange={(e) => handleRoleChange(u, e.target.value)}
+                      title={isCurrent && u.role === 'Admin' ? 'Anti-verrouillage : vous ne pouvez pas vous rétrograder vous-même' : 'Modifier le rôle'}
+                      style={{
+                        width: '100%',
+                        padding: '0.45rem 0.5rem',
+                        borderRadius: '6px',
+                        border:
+                          u.role === 'Admin'
+                            ? '1px solid #9333ea'
+                            : (u.role === 'Lead' || u.role === 'Purchaser')
+                              ? '1px solid #2563eb'
+                              : '1px solid #475569',
+                        backgroundColor:
+                          u.role === 'Admin'
+                            ? '#3b1d54'
+                            : (u.role === 'Lead' || u.role === 'Purchaser')
+                              ? '#17324d'
+                              : '#1e293b',
+                        color:
+                          u.role === 'Admin'
+                            ? '#c084fc'
+                            : (u.role === 'Lead' || u.role === 'Purchaser')
+                              ? '#60a5fa'
+                              : '#cbd5e1',
+                        fontSize: '0.8rem',
+                        fontWeight: '700',
+                        minHeight: '44px',
+                        cursor: (isCurrent && u.role === 'Admin') ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      <option value="Member">Membre</option>
+                      <option value="Lead">Chef d'équipe</option>
+                      <option value="Admin">Admin</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        /* Desktop Table */
+        <div style={{
+          backgroundColor: '#161920',
+          border: '1px solid #232733',
+          borderRadius: '12px',
+          overflow: 'hidden'
+        }}>
+          <div style={{ padding: '0.85rem 1.25rem', borderBottom: '1px solid #232733', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontWeight: '700', color: '#f8fafc', fontSize: '0.92rem' }}>
+              Membres de l'équipe ({filteredUsers.length} affiché{filteredUsers.length > 1 ? 's' : ''})
+            </span>
           </div>
-        ) : filteredUsers.length === 0 ? (
-          <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>
-            Aucun utilisateur ne correspond aux critères de recherche.
-          </div>
-        ) : (
+
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
               <thead>
@@ -417,18 +609,6 @@ export default function AdminUsersView() {
                 {filteredUsers.map(u => {
                   const isCurrent = currentUser?.id === u.id;
                   const isBusy = updatingId === u.id;
-
-                  // Department color
-                  const getDeptColor = (code) => {
-                    switch (code) {
-                      case 'ELE': return '#10b981';
-                      case 'STR': return '#38bdf8';
-                      case 'DRI': return '#f97316';
-                      case 'ERG': return '#ec4899';
-                      case 'ADM': return '#a855f7';
-                      default: return '#94a3b8';
-                    }
-                  };
 
                   return (
                     <tr key={u.id} style={{ borderBottom: '1px solid #1c202a', backgroundColor: isCurrent ? '#1e293b22' : 'transparent' }}>
@@ -518,7 +698,7 @@ export default function AdminUsersView() {
                               borderRadius: '6px',
                               border:
                                 u.role === 'Admin'
-                                  ? '1px solid #9333ea'
+                                   ? '1px solid #9333ea'
                                   : (u.role === 'Lead' || u.role === 'Purchaser')
                                     ? '1px solid #2563eb'
                                     : '1px solid #475569',
@@ -598,8 +778,8 @@ export default function AdminUsersView() {
               </tbody>
             </table>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Delete Confirmation Modal */}
       {userToDelete && (
@@ -609,18 +789,20 @@ export default function AdminUsersView() {
           backgroundColor: 'rgba(0, 0, 0, 0.75)',
           backdropFilter: 'blur(4px)',
           display: 'flex',
-          alignItems: 'center',
+          alignItems: isMobile ? 'flex-end' : 'center',
           justifyContent: 'center',
           zIndex: 50,
-          padding: '1rem'
+          padding: isMobile ? 0 : '1rem'
         }}>
           <div style={{
             backgroundColor: '#161920',
             border: '1px solid #dc2626',
-            borderRadius: '12px',
+            borderRadius: isMobile ? '16px 16px 0 0' : '12px',
             width: '100%',
-            maxWidth: '440px',
-            padding: '1.5rem',
+            maxWidth: isMobile ? '100%' : '440px',
+            maxHeight: '90dvh',
+            overflowY: 'auto',
+            padding: isMobile ? '1.25rem 1.25rem calc(1.25rem + var(--safe-bottom, 0px))' : '1.5rem',
             boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
@@ -648,14 +830,15 @@ export default function AdminUsersView() {
                 disabled={deleting}
                 onClick={() => setUserToDelete(null)}
                 style={{
-                  padding: '0.55rem 1rem',
+                  padding: '0.55rem 1.1rem',
                   borderRadius: '6px',
                   border: '1px solid #334155',
                   backgroundColor: 'transparent',
                   color: '#cbd5e1',
                   fontWeight: '600',
                   fontSize: '0.85rem',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  minHeight: '44px'
                 }}
               >
                 Annuler
@@ -672,7 +855,8 @@ export default function AdminUsersView() {
                   color: '#fff',
                   fontWeight: '700',
                   fontSize: '0.85rem',
-                  cursor: deleting ? 'not-allowed' : 'pointer'
+                  cursor: deleting ? 'not-allowed' : 'pointer',
+                  minHeight: '44px'
                 }}
               >
                 {deleting ? 'Suppression...' : 'Supprimer définitivement'}

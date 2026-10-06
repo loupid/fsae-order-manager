@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { useIsMobile } from '../utils/useMediaQuery';
 import { resolveDefaultSubsystemId } from '../utils/subsystemHelper';
 import { X, Sparkles, AlertCircle } from 'lucide-react';
 
 export default function PartRequestModal({ isOpen, onClose, onCreated, subsystems = [], currentUser }) {
+  const isMobile = useIsMobile(768);
   let authContext = null;
   try {
     authContext = useAuth();
@@ -214,19 +216,23 @@ export default function PartRequestModal({ isOpen, onClose, onCreated, subsystem
       inset: 0,
       backgroundColor: 'rgba(0, 0, 0, 0.75)',
       backdropFilter: 'blur(4px)',
+      WebkitBackdropFilter: 'blur(4px)',
       display: 'flex',
-      alignItems: 'center',
+      alignItems: isMobile ? 'flex-end' : 'center',
       justifyContent: 'center',
       zIndex: 50,
-      padding: '1rem'
+      padding: isMobile ? 0 : '1rem'
     }}>
       <div style={{
         backgroundColor: '#161920',
         border: '1px solid #2d3342',
-        borderRadius: '12px',
+        borderRadius: isMobile ? '16px 16px 0 0' : '12px',
         width: '100%',
-        maxWidth: '560px',
+        maxWidth: isMobile ? '100%' : '560px',
+        maxHeight: '92dvh',
         boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5)',
+        display: 'flex',
+        flexDirection: 'column',
         overflow: 'hidden'
       }}>
         {/* Modal Header */}
@@ -234,12 +240,13 @@ export default function PartRequestModal({ isOpen, onClose, onCreated, subsystem
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '1.1rem 1.5rem',
-          borderBottom: '1px solid #232733'
+          padding: '1rem 1.25rem',
+          borderBottom: '1px solid #232733',
+          flexShrink: 0
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <span style={{ fontSize: '1.2rem' }}>📦</span>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#f8fafc', margin: 0 }}>
+            <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: '#f8fafc', margin: 0 }}>
               Nouvelle Demande de Pièce
             </h3>
           </div>
@@ -250,241 +257,165 @@ export default function PartRequestModal({ isOpen, onClose, onCreated, subsystem
               border: 'none',
               color: '#94a3b8',
               cursor: 'pointer',
-              padding: '0.3rem',
+              padding: '0.4rem',
+              minWidth: '36px',
+              minHeight: '36px',
               display: 'flex',
-              alignItems: 'center'
+              alignItems: 'center',
+              justifyContent: 'center'
             }}
           >
             <X style={{ width: '20px', height: '20px' }} />
           </button>
         </div>
 
-        {/* Form Body */}
-        <form onSubmit={handleSubmit} style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
-          {error && (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              backgroundColor: '#451a1a',
-              border: '1px solid #dc2626',
-              color: '#f87171',
-              padding: '0.75rem 1rem',
-              borderRadius: '8px',
-              fontSize: '0.85rem'
-            }}>
-              <AlertCircle style={{ width: '16px', height: '16px', flexShrink: 0 }} />
-              <span>{error}</span>
-            </div>
-          )}
+        {/* Form Body - Scrollable content with fixed footer */}
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', flex: 1 }}>
+          <div style={{
+            padding: '1.25rem',
+            overflowY: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1rem',
+            flex: 1
+          }}>
+            {error && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                backgroundColor: '#451a1a',
+                border: '1px solid #dc2626',
+                color: '#f87171',
+                padding: '0.75rem 1rem',
+                borderRadius: '8px',
+                fontSize: '0.85rem'
+              }}>
+                <AlertCircle style={{ width: '16px', height: '16px', flexShrink: 0 }} />
+                <span>{error}</span>
+              </div>
+            )}
 
-          {/* Supplier URL with Live Auto-Extract */}
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
-              <label style={{ fontSize: '0.82rem', fontWeight: '600', color: '#cbd5e1' }}>
-                Lien de la pièce (DigiKey, Mouser, McMaster...)
-              </label>
-              {parsing && (
-                <span style={{ fontSize: '0.72rem', color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
-                  <Sparkles style={{ width: '12px', height: '12px' }} /> Détection auto...
-                </span>
-              )}
-              {parseSuccess && !parsing && (
-                <span style={{ fontSize: '0.72rem', color: '#4ade80' }}>
-                  ✨ Métadonnées extraites !
-                </span>
-              )}
-            </div>
-            <input
-              type="url"
-              value={url}
-              onChange={(e) => handleUrlChange(e.target.value)}
-              onBlur={handleUrlBlur}
-              placeholder="https://www.digikey.ca/en/products/detail/..."
-              style={{
-                width: '100%',
-                padding: '0.65rem 0.85rem',
-                backgroundColor: '#0f1115',
-                border: parseSuccess ? '1px solid #16a34a' : '1px solid #334155',
-                borderRadius: '6px',
-                color: '#f8fafc',
-                fontSize: '0.85rem',
-                boxSizing: 'border-box'
-              }}
-            />
-          </div>
-
-          {/* Live Subtotal Estimation Badge */}
-          {(parseFloat(unitPriceEst) > 0 || parseInt(quantity, 10) > 1) && (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '0.55rem 0.85rem',
-              backgroundColor: '#0c2e1f',
-              border: '1px solid #16a34a',
-              borderRadius: '6px',
-              fontSize: '0.82rem'
-            }}>
-              <span style={{ color: '#86efac', fontWeight: '600' }}>
-                Estimation Sous-Total ({parseInt(quantity, 10) || 1} unité{(parseInt(quantity, 10) || 1) > 1 ? 's' : ''}) :
-              </span>
-              <strong style={{ color: '#4ade80', fontSize: '0.92rem' }}>
-                ${((parseInt(quantity, 10) || 1) * (parseFloat(unitPriceEst) || 0)).toFixed(2)} CAD
-              </strong>
-            </div>
-          )}
-
-          {/* Supplier & SKU / MPN Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            {/* Supplier URL with Live Auto-Extract */}
             <div>
-              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: '#cbd5e1', marginBottom: '0.35rem' }}>
-                Fournisseur
-              </label>
-              <input
-                type="text"
-                value={supplier}
-                onChange={(e) => setSupplier(e.target.value)}
-                placeholder="ex: DigiKey, McMaster"
-                style={{
-                  width: '100%',
-                  padding: '0.65rem 0.85rem',
-                  backgroundColor: '#0f1115',
-                  border: '1px solid #334155',
-                  borderRadius: '6px',
-                  color: '#f8fafc',
-                  fontSize: '0.85rem',
-                  boxSizing: 'border-box'
-                }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: '#cbd5e1', marginBottom: '0.35rem' }}>
-                SKU / Référence Pièce
-              </label>
-              <input
-                type="text"
-                value={sku}
-                onChange={(e) => setSku(e.target.value)}
-                placeholder="ex: 296-1234-1-ND"
-                style={{
-                  width: '100%',
-                  padding: '0.65rem 0.85rem',
-                  backgroundColor: '#0f1115',
-                  border: '1px solid #334155',
-                  borderRadius: '6px',
-                  color: '#f8fafc',
-                  fontSize: '0.85rem',
-                  boxSizing: 'border-box'
-                }}
-              />
-              {mpn && (
-                <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '0.25rem' }}>
-                  MPN détecté : <strong style={{ color: '#38bdf8' }}>{mpn}</strong>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Description */}
-          <div>
-            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: '#cbd5e1', marginBottom: '0.35rem' }}>
-              Description de la pièce *
-            </label>
-            <input
-              type="text"
-              required
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="ex: Régulateur Buck 5V 2A SOIC-8 pour télémétrie"
-              style={{
-                width: '100%',
-                padding: '0.65rem 0.85rem',
-                backgroundColor: '#0f1115',
-                border: '1px solid #334155',
-                borderRadius: '6px',
-                color: '#f8fafc',
-                fontSize: '0.85rem',
-                boxSizing: 'border-box'
-              }}
-            />
-          </div>
-
-          {/* Subsystem & Urgency Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: '#cbd5e1', marginBottom: '0.35rem' }}>
-                Sous-système FSAE *
-              </label>
-              <select
-                value={subsystemId ? String(subsystemId) : (activeSubsystems[0] ? String(activeSubsystems[0].id) : '')}
-                onChange={(e) => setSubsystemId(e.target.value ? Number(e.target.value) : '')}
-                style={{
-                  width: '100%',
-                  padding: '0.65rem 0.85rem',
-                  backgroundColor: '#0f1115',
-                  border: '1px solid #334155',
-                  borderRadius: '6px',
-                  color: '#f8fafc',
-                  fontSize: '0.85rem',
-                  boxSizing: 'border-box'
-                }}
-              >
-                {activeSubsystems.length === 0 ? (
-                  <option value="">Chargement des sous-systèmes...</option>
-                ) : (
-                  <>
-                    {!subsystemId && (
-                      <option value="" disabled>-- Sélectionner un sous-système --</option>
-                    )}
-                    {activeSubsystems.map(s => (
-                      <option key={s.id} value={s.id}>
-                        [{s.code}] {s.name}
-                      </option>
-                    ))}
-                  </>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
+                <label style={{ fontSize: '0.82rem', fontWeight: '600', color: '#cbd5e1' }}>
+                  Lien de la pièce (DigiKey, Mouser, McMaster...)
+                </label>
+                {parsing && (
+                  <span style={{ fontSize: '0.72rem', color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                    <Sparkles style={{ width: '12px', height: '12px' }} /> Détection auto...
+                  </span>
                 )}
-              </select>
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: '#cbd5e1', marginBottom: '0.35rem' }}>
-                Niveau d'Urgence *
-              </label>
-              <select
-                value={urgencyLevel}
-                onChange={(e) => setUrgencyLevel(e.target.value)}
+                {parseSuccess && !parsing && (
+                  <span style={{ fontSize: '0.72rem', color: '#4ade80' }}>
+                    ✨ Métadonnées extraites !
+                  </span>
+                )}
+              </div>
+              <input
+                type="url"
+                value={url}
+                onChange={(e) => handleUrlChange(e.target.value)}
+                onBlur={handleUrlBlur}
+                placeholder="https://www.digikey.ca/en/products/detail/..."
                 style={{
                   width: '100%',
                   padding: '0.65rem 0.85rem',
-                  backgroundColor: urgencyLevel === 'CRITICAL' ? '#451a1a' : urgencyLevel === 'URGENT' ? '#3b2512' : '#0f1115',
-                  border: urgencyLevel === 'CRITICAL' ? '1px solid #dc2626' : urgencyLevel === 'URGENT' ? '1px solid #d97706' : '1px solid #334155',
+                  backgroundColor: '#0f1115',
+                  border: parseSuccess ? '1px solid #16a34a' : '1px solid #334155',
                   borderRadius: '6px',
                   color: '#f8fafc',
                   fontSize: '0.85rem',
-                  fontWeight: '600',
                   boxSizing: 'border-box'
                 }}
-              >
-                <option value="NORMAL">🟢 Normal (Planning standard)</option>
-                <option value="URGENT">⚡ Urgent (Prochain roulage)</option>
-                <option value="CRITICAL">🚨 CRITIQUE (Véhicule bloqué)</option>
-              </select>
+              />
             </div>
-          </div>
 
-          {/* Quantity & Unit Price */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            {/* Live Subtotal Estimation Badge */}
+            {(parseFloat(unitPriceEst) > 0 || parseInt(quantity, 10) > 1) && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '0.55rem 0.85rem',
+                backgroundColor: '#0c2e1f',
+                border: '1px solid #16a34a',
+                borderRadius: '6px',
+                fontSize: '0.82rem'
+              }}>
+                <span style={{ color: '#86efac', fontWeight: '600' }}>
+                  Estimation Sous-Total ({parseInt(quantity, 10) || 1} unité{(parseInt(quantity, 10) || 1) > 1 ? 's' : ''}) :
+                </span>
+                <strong style={{ color: '#4ade80', fontSize: '0.92rem' }}>
+                  ${((parseInt(quantity, 10) || 1) * (parseFloat(unitPriceEst) || 0)).toFixed(2)} CAD
+                </strong>
+              </div>
+            )}
+
+            {/* Supplier & SKU / MPN Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '0.85rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: '#cbd5e1', marginBottom: '0.35rem' }}>
+                  Fournisseur
+                </label>
+                <input
+                  type="text"
+                  value={supplier}
+                  onChange={(e) => setSupplier(e.target.value)}
+                  placeholder="ex: DigiKey, McMaster"
+                  style={{
+                    width: '100%',
+                    padding: '0.65rem 0.85rem',
+                    backgroundColor: '#0f1115',
+                    border: '1px solid #334155',
+                    borderRadius: '6px',
+                    color: '#f8fafc',
+                    fontSize: '0.85rem',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: '#cbd5e1', marginBottom: '0.35rem' }}>
+                  SKU / Référence Pièce
+                </label>
+                <input
+                  type="text"
+                  value={sku}
+                  onChange={(e) => setSku(e.target.value)}
+                  placeholder="ex: 296-1234-1-ND"
+                  style={{
+                    width: '100%',
+                    padding: '0.65rem 0.85rem',
+                    backgroundColor: '#0f1115',
+                    border: '1px solid #334155',
+                    borderRadius: '6px',
+                    color: '#f8fafc',
+                    fontSize: '0.85rem',
+                    boxSizing: 'border-box'
+                  }}
+                />
+                {mpn && (
+                  <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+                    MPN détecté : <strong style={{ color: '#38bdf8' }}>{mpn}</strong>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Description */}
             <div>
               <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: '#cbd5e1', marginBottom: '0.35rem' }}>
-                Quantité
+                Description de la pièce *
               </label>
               <input
-                type="number"
-                min="1"
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
+                type="text"
+                required
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="ex: Régulateur Buck 5V 2A SOIC-8 pour télémétrie"
                 style={{
                   width: '100%',
                   padding: '0.65rem 0.85rem',
@@ -498,33 +429,131 @@ export default function PartRequestModal({ isOpen, onClose, onCreated, subsystem
               />
             </div>
 
-            <div>
-              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: '#cbd5e1', marginBottom: '0.35rem' }}>
-                Prix Unitaire Estimé ($ CAD)
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={unitPriceEst}
-                onChange={(e) => setUnitPriceEst(e.target.value)}
-                placeholder="0.00"
-                style={{
-                  width: '100%',
-                  padding: '0.65rem 0.85rem',
-                  backgroundColor: '#0f1115',
-                  border: '1px solid #334155',
-                  borderRadius: '6px',
-                  color: '#f8fafc',
-                  fontSize: '0.85rem',
-                  boxSizing: 'border-box'
-                }}
-              />
+            {/* Subsystem & Urgency Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '0.85rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: '#cbd5e1', marginBottom: '0.35rem' }}>
+                  Sous-système FSAE *
+                </label>
+                <select
+                  value={subsystemId ? String(subsystemId) : (activeSubsystems[0] ? String(activeSubsystems[0].id) : '')}
+                  onChange={(e) => setSubsystemId(e.target.value ? Number(e.target.value) : '')}
+                  style={{
+                    width: '100%',
+                    padding: '0.65rem 0.85rem',
+                    backgroundColor: '#0f1115',
+                    border: '1px solid #334155',
+                    borderRadius: '6px',
+                    color: '#f8fafc',
+                    fontSize: '0.85rem',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  {activeSubsystems.length === 0 ? (
+                    <option value="">Chargement des sous-systèmes...</option>
+                  ) : (
+                    <>
+                      {!subsystemId && (
+                        <option value="" disabled>-- Sélectionner un sous-système --</option>
+                      )}
+                      {activeSubsystems.map(s => (
+                        <option key={s.id} value={s.id}>
+                          [{s.code}] {s.name}
+                        </option>
+                      ))}
+                    </>
+                  )}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: '#cbd5e1', marginBottom: '0.35rem' }}>
+                  Niveau d'Urgence *
+                </label>
+                <select
+                  value={urgencyLevel}
+                  onChange={(e) => setUrgencyLevel(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.65rem 0.85rem',
+                    backgroundColor: urgencyLevel === 'CRITICAL' ? '#451a1a' : urgencyLevel === 'URGENT' ? '#3b2512' : '#0f1115',
+                    border: urgencyLevel === 'CRITICAL' ? '1px solid #dc2626' : urgencyLevel === 'URGENT' ? '1px solid #d97706' : '1px solid #334155',
+                    borderRadius: '6px',
+                    color: '#f8fafc',
+                    fontSize: '0.85rem',
+                    fontWeight: '600',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  <option value="NORMAL">🟢 Normal (Planning standard)</option>
+                  <option value="URGENT">⚡ Urgent (Prochain roulage)</option>
+                  <option value="CRITICAL">🚨 CRITIQUE (Véhicule bloqué)</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Quantity & Unit Price */}
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '0.85rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: '#cbd5e1', marginBottom: '0.35rem' }}>
+                  Quantité
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  inputMode="numeric"
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.65rem 0.85rem',
+                    backgroundColor: '#0f1115',
+                    border: '1px solid #334155',
+                    borderRadius: '6px',
+                    color: '#f8fafc',
+                    fontSize: '0.85rem',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: '#cbd5e1', marginBottom: '0.35rem' }}>
+                  Prix Unitaire Estimé ($ CAD)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  inputMode="decimal"
+                  value={unitPriceEst}
+                  onChange={(e) => setUnitPriceEst(e.target.value)}
+                  placeholder="0.00"
+                  style={{
+                    width: '100%',
+                    padding: '0.65rem 0.85rem',
+                    backgroundColor: '#0f1115',
+                    border: '1px solid #334155',
+                    borderRadius: '6px',
+                    color: '#f8fafc',
+                    fontSize: '0.85rem',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
             </div>
           </div>
 
-          {/* Actions */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
+          {/* Fixed Footer for Buttons */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            gap: '0.75rem',
+            padding: isMobile ? '0.85rem 1.25rem calc(0.85rem + var(--safe-bottom, 0px))' : '1rem 1.25rem',
+            borderTop: '1px solid #232733',
+            backgroundColor: '#161920',
+            flexShrink: 0
+          }}>
             <button
               type="button"
               onClick={handleClose}
@@ -536,7 +565,8 @@ export default function PartRequestModal({ isOpen, onClose, onCreated, subsystem
                 color: '#cbd5e1',
                 fontWeight: '600',
                 fontSize: '0.85rem',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                minHeight: '44px'
               }}
             >
               Annuler
@@ -553,7 +583,8 @@ export default function PartRequestModal({ isOpen, onClose, onCreated, subsystem
                 fontWeight: '700',
                 fontSize: '0.85rem',
                 cursor: submitting ? 'not-allowed' : 'pointer',
-                boxShadow: '0 4px 6px -1px rgba(239, 68, 68, 0.4)'
+                boxShadow: '0 4px 6px -1px rgba(239, 68, 68, 0.4)',
+                minHeight: '44px'
               }}
             >
               {submitting ? 'Envoi...' : 'Soumettre la Demande'}

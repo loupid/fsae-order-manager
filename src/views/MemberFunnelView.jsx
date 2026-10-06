@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { useIsMobile } from '../utils/useMediaQuery';
 import UrgencyBadge from '../components/UrgencyBadge';
 import PartRequestModal from '../components/PartRequestModal';
 import { Plus, Search, Filter, ExternalLink, Trash2, Clock, CheckCircle2, PackageCheck, XCircle } from 'lucide-react';
 
 export default function MemberFunnelView() {
   const { user, isAdmin } = useAuth();
+  const isMobile = useIsMobile(768);
   const [requests, setRequests] = useState([]);
   const [subsystems, setSubsystems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -82,7 +84,7 @@ export default function MemberFunnelView() {
   };
 
   return (
-    <div style={{ padding: '1.5rem 2rem', maxWidth: '1400px', margin: '0 auto' }}>
+    <div style={{ padding: isMobile ? '1rem' : '1.5rem 2rem', maxWidth: '1400px', margin: '0 auto' }}>
       {/* Header Actions */}
       <div style={{
         display: 'flex',
@@ -90,37 +92,40 @@ export default function MemberFunnelView() {
         justifyContent: 'space-between',
         flexWrap: 'wrap',
         gap: '1rem',
-        marginBottom: '1.5rem'
+        marginBottom: '1.25rem'
       }}>
         <div>
-          <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#f8fafc', margin: '0 0 0.25rem' }}>
+          <h2 style={{ fontSize: isMobile ? '1.25rem' : '1.4rem', fontWeight: '800', color: '#f8fafc', margin: '0 0 0.25rem' }}>
             File des Demandes de Pièces (Funnel)
           </h2>
-          <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: 0 }}>
-            Soumettez vos besoins de pièces pour votre sous-système et suivez l'état d'approvisionnement en direct.
+          <p style={{ fontSize: '0.82rem', color: '#94a3b8', margin: 0 }}>
+            Soumettez vos besoins de pièces pour votre sous-système et suivez l'état en direct.
           </p>
         </div>
 
-        <button
-          onClick={() => setIsModalOpen(true)}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            padding: '0.65rem 1.25rem',
-            backgroundColor: '#ef4444',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '8px',
-            fontWeight: '700',
-            fontSize: '0.88rem',
-            cursor: 'pointer',
-            boxShadow: '0 4px 12px rgba(239, 68, 68, 0.4)'
-          }}
-        >
-          <Plus style={{ width: '18px', height: '18px' }} />
-          <span>Nouvelle Demande</span>
-        </button>
+        {/* Desktop Header Action Button */}
+        {!isMobile && (
+          <button
+            onClick={() => setIsModalOpen(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.65rem 1.25rem',
+              backgroundColor: '#ef4444',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '8px',
+              fontWeight: '700',
+              fontSize: '0.88rem',
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(239, 68, 68, 0.4)'
+            }}
+          >
+            <Plus style={{ width: '18px', height: '18px' }} />
+            <span>Nouvelle Demande</span>
+          </button>
+        )}
       </div>
 
       {/* Filter Bar */}
@@ -128,13 +133,13 @@ export default function MemberFunnelView() {
         backgroundColor: '#161920',
         border: '1px solid #232733',
         borderRadius: '10px',
-        padding: '1rem',
-        marginBottom: '1.5rem',
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-        gap: '0.75rem'
+        padding: '0.85rem',
+        marginBottom: '1.25rem',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.65rem'
       }}>
-        {/* Search */}
+        {/* Search Input */}
         <div style={{ position: 'relative' }}>
           <Search style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', width: '15px', height: '15px', color: '#64748b' }} />
           <input
@@ -149,73 +154,197 @@ export default function MemberFunnelView() {
               border: '1px solid #2d3342',
               borderRadius: '6px',
               color: '#f8fafc',
-              fontSize: '0.82rem',
+              fontSize: '0.85rem',
               boxSizing: 'border-box'
             }}
           />
         </div>
 
-        {/* Subsystem Filter */}
-        <select
-          value={selectedSubsystem}
-          onChange={(e) => setSelectedSubsystem(e.target.value)}
-          style={{
-            padding: '0.55rem 0.75rem',
-            backgroundColor: '#0f1115',
-            border: '1px solid #2d3342',
-            borderRadius: '6px',
-            color: '#f8fafc',
-            fontSize: '0.82rem'
-          }}
-        >
-          <option value="">Tous les sous-systèmes</option>
-          {subsystems.map(s => (
-            <option key={s.id} value={s.id}>[{s.code}] {s.name}</option>
-          ))}
-        </select>
+        {/* Filters: Mobile Horizontal Scroll-Snap Chips vs Desktop Grid */}
+        {isMobile ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {/* Subsystem Dropdown */}
+            <select
+              value={selectedSubsystem}
+              onChange={(e) => setSelectedSubsystem(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '0.55rem 0.75rem',
+                backgroundColor: '#0f1115',
+                border: '1px solid #2d3342',
+                borderRadius: '8px',
+                color: '#f8fafc',
+                fontSize: '0.85rem',
+                minHeight: '44px'
+              }}
+            >
+              <option value="">Tous les sous-systèmes ({subsystems.length})</option>
+              {subsystems.map(s => (
+                <option key={s.id} value={s.id}>[{s.code}] {s.name}</option>
+              ))}
+            </select>
 
-        {/* Urgency Filter */}
-        <select
-          value={selectedUrgency}
-          onChange={(e) => setSelectedUrgency(e.target.value)}
-          style={{
-            padding: '0.55rem 0.75rem',
-            backgroundColor: '#0f1115',
-            border: '1px solid #2d3342',
-            borderRadius: '6px',
-            color: '#f8fafc',
-            fontSize: '0.82rem'
-          }}
-        >
-          <option value="">Toutes les urgences</option>
-          <option value="CRITICAL">🚨 Critique</option>
-          <option value="URGENT">⚡ Urgent</option>
-          <option value="NORMAL">🟢 Normal</option>
-        </select>
+            {/* Status Filter Chips (Horizontal scroll-snap) */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              overflowX: 'auto',
+              scrollSnapType: 'x mandatory',
+              WebkitOverflowScrolling: 'touch',
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+              padding: '0.15rem 0'
+            }}>
+              {[
+                { val: '', label: 'Tous statuts' },
+                { val: 'SUBMITTED', label: '🕒 Soumise' },
+                { val: 'APPROVED', label: '✅ Approuvée' },
+                { val: 'ORDERED', label: '🚚 Commandée' },
+                { val: 'RECEIVED', label: '🏁 Reçue' },
+                { val: 'REJECTED', label: '🚫 Refusée' }
+              ].map(chip => {
+                const active = selectedStatus === chip.val;
+                return (
+                  <button
+                    key={chip.val}
+                    type="button"
+                    onClick={() => setSelectedStatus(chip.val)}
+                    style={{
+                      scrollSnapAlign: 'start',
+                      whiteSpace: 'nowrap',
+                      padding: '0.45rem 0.85rem',
+                      minHeight: '40px',
+                      borderRadius: '9999px',
+                      border: active ? '1px solid #3b82f6' : '1px solid #2d3342',
+                      backgroundColor: active ? '#1e3a8a55' : '#0f1115',
+                      color: active ? '#60a5fa' : '#94a3b8',
+                      fontSize: '0.78rem',
+                      fontWeight: active ? '700' : '500',
+                      cursor: 'pointer',
+                      flexShrink: 0
+                    }}
+                  >
+                    {chip.label}
+                  </button>
+                );
+              })}
+            </div>
 
-        {/* Status Filter */}
-        <select
-          value={selectedStatus}
-          onChange={(e) => setSelectedStatus(e.target.value)}
-          style={{
-            padding: '0.55rem 0.75rem',
-            backgroundColor: '#0f1115',
-            border: '1px solid #2d3342',
-            borderRadius: '6px',
-            color: '#f8fafc',
-            fontSize: '0.82rem'
-          }}
-        >
-          <option value="">Tous les statuts</option>
-          <option value="SUBMITTED">Soumise</option>
-          <option value="APPROVED">Approuvée</option>
-          <option value="ORDERED">Commandée</option>
-          <option value="RECEIVED">Reçue à l'atelier</option>
-          <option value="REJECTED">Refusée</option>
-        </select>
+            {/* Urgency Filter Chips (Horizontal scroll-snap) */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              overflowX: 'auto',
+              scrollSnapType: 'x mandatory',
+              WebkitOverflowScrolling: 'touch',
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+              padding: '0.15rem 0'
+            }}>
+              {[
+                { val: '', label: 'Toutes urgences' },
+                { val: 'CRITICAL', label: '🚨 Critique', color: '#f87171', border: '#dc2626', bg: '#451a1a' },
+                { val: 'URGENT', label: '⚡ Urgent', color: '#fb923c', border: '#ea580c', bg: '#431407' },
+                { val: 'NORMAL', label: '🟢 Normal', color: '#4ade80', border: '#16a34a', bg: '#052e16' }
+              ].map(chip => {
+                const active = selectedUrgency === chip.val;
+                return (
+                  <button
+                    key={chip.val}
+                    type="button"
+                    onClick={() => setSelectedUrgency(chip.val)}
+                    style={{
+                      scrollSnapAlign: 'start',
+                      whiteSpace: 'nowrap',
+                      padding: '0.45rem 0.85rem',
+                      minHeight: '40px',
+                      borderRadius: '9999px',
+                      border: active ? (chip.border ? `1px solid ${chip.border}` : '1px solid #3b82f6') : '1px solid #2d3342',
+                      backgroundColor: active ? (chip.bg || '#1e3a8a55') : '#0f1115',
+                      color: active ? (chip.color || '#60a5fa') : '#94a3b8',
+                      fontSize: '0.78rem',
+                      fontWeight: active ? '700' : '500',
+                      cursor: 'pointer',
+                      flexShrink: 0
+                    }}
+                  >
+                    {chip.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+            gap: '0.5rem'
+          }}>
+            {/* Subsystem Filter */}
+            <select
+              value={selectedSubsystem}
+              onChange={(e) => setSelectedSubsystem(e.target.value)}
+              style={{
+                padding: '0.55rem 0.75rem',
+                backgroundColor: '#0f1115',
+                border: '1px solid #2d3342',
+                borderRadius: '6px',
+                color: '#f8fafc',
+                fontSize: '0.82rem'
+              }}
+            >
+              <option value="">Tous les sous-systèmes</option>
+              {subsystems.map(s => (
+                <option key={s.id} value={s.id}>[{s.code}] {s.name}</option>
+              ))}
+            </select>
+
+            {/* Urgency Filter */}
+            <select
+              value={selectedUrgency}
+              onChange={(e) => setSelectedUrgency(e.target.value)}
+              style={{
+                padding: '0.55rem 0.75rem',
+                backgroundColor: '#0f1115',
+                border: '1px solid #2d3342',
+                borderRadius: '6px',
+                color: '#f8fafc',
+                fontSize: '0.82rem'
+              }}
+            >
+              <option value="">Toutes les urgences</option>
+              <option value="CRITICAL">🚨 Critique</option>
+              <option value="URGENT">⚡ Urgent</option>
+              <option value="NORMAL">🟢 Normal</option>
+            </select>
+
+            {/* Status Filter */}
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              style={{
+                padding: '0.55rem 0.75rem',
+                backgroundColor: '#0f1115',
+                border: '1px solid #2d3342',
+                borderRadius: '6px',
+                color: '#f8fafc',
+                fontSize: '0.82rem'
+              }}
+            >
+              <option value="">Tous les statuts</option>
+              <option value="SUBMITTED">Soumise</option>
+              <option value="APPROVED">Approuvée</option>
+              <option value="ORDERED">Commandée</option>
+              <option value="RECEIVED">Reçue à l'atelier</option>
+              <option value="REJECTED">Refusée</option>
+            </select>
+          </div>
+        )}
       </div>
 
-      {/* Requests Table */}
+      {/* Requests Content: Loading / Empty / Data */}
       {loading ? (
         <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
           Chargement des demandes...
@@ -225,7 +354,7 @@ export default function MemberFunnelView() {
           backgroundColor: '#161920',
           border: '1px dashed #334155',
           borderRadius: '12px',
-          padding: '3rem',
+          padding: '2.5rem 1.5rem',
           textAlign: 'center',
           color: '#94a3b8'
         }}>
@@ -234,10 +363,131 @@ export default function MemberFunnelView() {
             Aucune demande trouvée
           </div>
           <div style={{ fontSize: '0.82rem' }}>
-            Cliquez sur "Nouvelle Demande" pour soumettre un lien DigiKey, Mouser ou McMaster-Carr.
+            Cliquez sur "Nouvelle Demande" pour soumettre un composant DigiKey, Mouser, McMaster ou LCSC.
           </div>
         </div>
+      ) : isMobile ? (
+        /* ================= MOBILE CARDS VIEW ================= */
+        <div className="mobile-cards-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          {filteredRequests.map(r => {
+            const badge = getStatusBadge(r.status);
+            const StatusIcon = badge.icon;
+            const canDelete = r.requester_id === user?.id || isAdmin;
+
+            return (
+              <div
+                key={r.id}
+                className="part-request-card"
+                style={{
+                  backgroundColor: '#161920',
+                  border: r.urgency_level === 'CRITICAL' ? '1px solid #dc2626' : '1px solid #232733',
+                  borderRadius: '10px',
+                  padding: '1rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.65rem'
+                }}
+              >
+                {/* Card Top: Badges & Status */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.4rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <UrgencyBadge level={r.urgency_level} />
+                    <span style={{
+                      padding: '0.2rem 0.5rem',
+                      borderRadius: '4px',
+                      backgroundColor: '#1e293b',
+                      color: '#94a3b8',
+                      fontSize: '0.72rem',
+                      fontWeight: '700'
+                    }}>
+                      {r.subsystem_code || 'GEN'}
+                    </span>
+                  </div>
+
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.3rem',
+                    padding: '0.2rem 0.5rem',
+                    borderRadius: '6px',
+                    backgroundColor: badge.bg,
+                    color: badge.color,
+                    fontSize: '0.72rem',
+                    fontWeight: '600'
+                  }}>
+                    <StatusIcon style={{ width: '12px', height: '12px' }} />
+                    {badge.label}
+                  </span>
+                </div>
+
+                {/* Card Title & Description */}
+                <div>
+                  <div style={{ fontWeight: '700', color: '#f8fafc', fontSize: '0.95rem', marginBottom: '0.2rem' }}>
+                    {r.description}
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <span>Fournisseur: <strong style={{ color: '#cbd5e1' }}>{r.supplier}</strong></span>
+                    {r.sku && <span>SKU: <code style={{ color: '#94a3b8' }}>{r.sku}</code></span>}
+                    {r.url && (
+                      <a
+                        href={r.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '0.2rem', textDecoration: 'none' }}
+                      >
+                        <ExternalLink style={{ width: '11px', height: '11px' }} /> Fiche
+                      </a>
+                    )}
+                  </div>
+                </div>
+
+                {/* Card Footer: Financials, Requester, Delete */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  paddingTop: '0.5rem',
+                  borderTop: '1px solid #1c202a',
+                  fontSize: '0.8rem'
+                }}>
+                  <div>
+                    <span style={{ color: '#cbd5e1', fontWeight: '700' }}>x{r.quantity}</span>
+                    <span style={{ margin: '0 0.4rem', color: '#475569' }}>•</span>
+                    <span style={{ fontWeight: '800', color: '#4ade80' }}>
+                      ${(Number(r.unit_price_est || 0) * r.quantity).toFixed(2)} CAD
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{r.requester_name}</span>
+                    {canDelete && ['SUBMITTED', 'DRAFT', 'REJECTED'].includes(r.status) && (
+                      <button
+                        onClick={() => handleDelete(r.id)}
+                        title="Supprimer la demande"
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          color: '#f87171',
+                          cursor: 'pointer',
+                          minWidth: '44px',
+                          minHeight: '44px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRadius: '6px'
+                        }}
+                      >
+                        <Trash2 style={{ width: '18px', height: '18px' }} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       ) : (
+        /* ================= DESKTOP TABLE VIEW ================= */
         <div style={{
           backgroundColor: '#161920',
           border: '1px solid #232733',
@@ -365,6 +615,35 @@ export default function MemberFunnelView() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* Mobile Floating Action Button (FAB) */}
+      {isMobile && (
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="mobile-fab"
+          style={{
+            position: 'fixed',
+            bottom: 'calc(4.75rem + var(--safe-bottom, 0px))',
+            right: '1.25rem',
+            zIndex: 45,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            padding: '0.75rem 1.25rem',
+            backgroundColor: '#ef4444',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '9999px',
+            fontWeight: '800',
+            fontSize: '0.9rem',
+            cursor: 'pointer',
+            boxShadow: '0 6px 20px rgba(239, 68, 68, 0.5), 0 2px 6px rgba(0, 0, 0, 0.4)'
+          }}
+        >
+          <Plus style={{ width: '20px', height: '20px' }} />
+          <span>+ Demande</span>
+        </button>
       )}
 
       {/* New Part Request Modal */}

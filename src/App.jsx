@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { useIsMobile } from './utils/useMediaQuery';
 import Navbar from './components/Navbar';
 import LoginView from './views/LoginView';
 import MemberFunnelView from './views/MemberFunnelView';
@@ -9,6 +10,7 @@ import AdminUsersView from './views/AdminUsersView';
 
 function AppContent() {
   const { user, loading, canOrder, canViewBudget, canManageUsers } = useAuth();
+  const isMobile = useIsMobile(768);
   const [activeTab, setActiveTab] = useState('funnel');
 
   // Fallback to 'funnel' tab if user loses permission for active tab
@@ -57,23 +59,28 @@ function AppContent() {
     <div style={{ minHeight: '100vh', backgroundColor: '#0c0d10', color: '#f8fafc', display: 'flex', flexDirection: 'column' }}>
       <Navbar activeTab={activeTab} onTabChange={setActiveTab} />
       
-      <main style={{ flex: 1 }}>
+      <main style={{
+        flex: 1,
+        paddingBottom: isMobile ? 'calc(4.75rem + var(--safe-bottom, 0px))' : '0'
+      }}>
         {activeTab === 'funnel' && <MemberFunnelView />}
         {activeTab === 'purchaser' && (canOrder ? <PurchaserDashboard /> : <MemberFunnelView />)}
         {activeTab === 'cost-report' && (canViewBudget ? <CostReportView /> : <MemberFunnelView />)}
         {activeTab === 'users' && (canManageUsers ? <AdminUsersView /> : <MemberFunnelView />)}
       </main>
 
-      <footer style={{
-        textAlign: 'center',
-        padding: '1.5rem',
-        borderTop: '1px solid #1e2430',
-        color: '#64748b',
-        fontSize: '0.75rem',
-        backgroundColor: '#0c0d10'
-      }}>
-        🏎️ <strong>FSAE Order Manager</strong> • Ingénierie Logistique & Approvisionnement Véhicule Électrique • Raspberry Pi ARM Deployment
-      </footer>
+      {!isMobile && (
+        <footer style={{
+          textAlign: 'center',
+          padding: '1.5rem',
+          borderTop: '1px solid #1e2430',
+          color: '#64748b',
+          fontSize: '0.75rem',
+          backgroundColor: '#0c0d10'
+        }}>
+          🏎️ <strong>FSAE Order Manager</strong> • Ingénierie Logistique & Approvisionnement Véhicule Électrique • Raspberry Pi ARM Deployment
+        </footer>
+      )}
     </div>
   );
 }

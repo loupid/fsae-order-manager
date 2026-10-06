@@ -1,7 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { useIsMobile } from '../utils/useMediaQuery';
 import { X, Download, Copy, Check, FileSpreadsheet, CheckSquare, Square } from 'lucide-react';
 
 function CsvExportModal({ isOpen, onClose, title = "Exporter la liste", items = [], defaultProvider = "DigiKey", defaultCustomerRef = "" }) {
+  const isMobile = useIsMobile(768);
   const [provider, setProvider] = useState(defaultProvider);
   const [exportMode, setExportMode] = useState('all'); // 'all' | 'missing' | 'selected'
   const [customerRef, setCustomerRef] = useState(defaultCustomerRef);
@@ -148,14 +150,14 @@ function CsvExportModal({ isOpen, onClose, title = "Exporter la liste", items = 
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div className="card modal-content" style={{ maxWidth: '900px', width: '95%', maxHeight: '92vh', display: 'flex', flexDirection: 'column', padding: '1.75rem' }}>
+    <div className="modal-overlay" style={{ display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center', padding: isMobile ? 0 : '1rem' }}>
+      <div className="card modal-content" style={{ maxWidth: isMobile ? '100%' : '900px', width: isMobile ? '100%' : '95%', maxHeight: isMobile ? '92dvh' : '92vh', borderRadius: isMobile ? '16px 16px 0 0' : 'var(--radius-lg)', display: 'flex', flexDirection: 'column', padding: isMobile ? '1.25rem 1.25rem calc(1.25rem + var(--safe-bottom, 0px))' : '1.75rem' }}>
         
         {/* Header */}
         <div className="modal-header" style={{ paddingBottom: '1rem', marginBottom: '1.25rem', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <FileSpreadsheet style={{ width: '24px', height: '24px', color: 'var(--accent-red)' }} />
-            <h2 className="modal-title" style={{ fontSize: '1.25rem' }}>{title}</h2>
+            <h2 className="modal-title" style={{ fontSize: isMobile ? '1.1rem' : '1.25rem' }}>{title}</h2>
           </div>
           <button className="close-btn" onClick={onClose}>
             <X style={{ width: '20px', height: '20px' }} />
@@ -163,10 +165,20 @@ function CsvExportModal({ isOpen, onClose, title = "Exporter la liste", items = 
         </div>
 
         {/* Two pane body */}
-        <div className="grid-2" style={{ flex: 1, overflow: 'hidden', gridTemplateColumns: '320px 1fr', gap: '1.5rem', minHeight: '380px' }}>
+        <div className="grid-2" style={{ flex: 1, overflow: 'hidden', gridTemplateColumns: isMobile ? '1fr' : '320px 1fr', gap: isMobile ? '1rem' : '1.5rem', minHeight: isMobile ? 'auto' : '380px' }}>
           
           {/* Left panel: configurations */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', borderRight: '1px solid var(--glass-border)', paddingRight: '1.5rem', overflowY: 'auto' }}>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1.25rem',
+            borderRight: isMobile ? 'none' : '1px solid var(--glass-border)',
+            borderBottom: isMobile ? '1px solid var(--glass-border)' : 'none',
+            paddingRight: isMobile ? 0 : '1.5rem',
+            paddingBottom: isMobile ? '1rem' : 0,
+            maxHeight: isMobile ? '200px' : 'none',
+            overflowY: 'auto'
+          }}>
             
             <div className="form-group">
               <label className="form-label">Format de Distributeur</label>
@@ -383,20 +395,37 @@ function CsvExportModal({ isOpen, onClose, title = "Exporter la liste", items = 
         </div>
 
         {/* Footer actions */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--glass-border)', paddingTop: '1.25rem', marginTop: '1.5rem', flexShrink: 0 }}>
-          <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+        <div style={{
+          display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
+          justifyContent: 'space-between',
+          alignItems: isMobile ? 'stretch' : 'center',
+          gap: isMobile ? '0.75rem' : '1rem',
+          borderTop: '1px solid var(--glass-border)',
+          paddingTop: '1.25rem',
+          marginTop: '1.25rem',
+          flexShrink: 0
+        }}>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
             {provider === 'Générique' 
               ? "Format universel complet avec MPN, SKU, Prix, Description."
               : `Optimisé pour l'outil de commande rapide (Quick Order) de ${provider}.`
             }
           </div>
-          <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', gap: '0.75rem', width: isMobile ? '100%' : 'auto' }}>
             <button 
               type="button" 
               className="btn btn-secondary" 
               onClick={handleCopy}
               disabled={activeItems.length === 0}
-              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+              style={{
+                flex: isMobile ? 1 : 'initial',
+                justifyContent: 'center',
+                minHeight: '44px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem'
+              }}
             >
               {copied ? (
                 <>
@@ -406,7 +435,7 @@ function CsvExportModal({ isOpen, onClose, title = "Exporter la liste", items = 
               ) : (
                 <>
                   <Copy style={{ width: '16px', height: '16px' }} />
-                  Copier dans le presse-papier
+                  Copier
                 </>
               )}
             </button>
@@ -415,7 +444,14 @@ function CsvExportModal({ isOpen, onClose, title = "Exporter la liste", items = 
               className="btn btn-primary" 
               onClick={handleDownload}
               disabled={activeItems.length === 0}
-              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+              style={{
+                flex: isMobile ? 1 : 'initial',
+                justifyContent: 'center',
+                minHeight: '44px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem'
+              }}
             >
               <Download style={{ width: '16px', height: '16px' }} />
               Télécharger .CSV

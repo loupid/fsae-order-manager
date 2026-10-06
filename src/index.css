@@ -1,6 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+
   /* Color system - Dark Premium FSAE Theme */
   --bg-primary: hsl(224, 25%, 9%);
   --bg-secondary: hsl(222, 21%, 13%);
@@ -40,6 +43,18 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Mobile Touch Optimization & Anti-Zoom Safari iOS */
+@media (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+button, input, select, textarea, a, .clickable {
+  touch-action: manipulation;
 }
 
 body {
@@ -620,6 +635,11 @@ body {
   color: var(--text-muted);
   cursor: pointer;
   transition: var(--transition);
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .close-btn:hover {

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useIsMobile } from '../utils/useMediaQuery';
 import { apiClient } from '../api/client';
 import {
   Lock,
@@ -76,6 +77,7 @@ const INITIAL_DEPARTMENTS = [
 
 export default function LoginView() {
   const { login, register, error } = useAuth();
+  const isMobile = useIsMobile(768);
 
   // Mode: false = Connexion classique, true = Questionnaire d'intégration UQTR
   const [isRegisterMode, setIsRegisterMode] = useState(false);
@@ -202,16 +204,16 @@ export default function LoginView() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '1.5rem',
+      padding: isMobile ? '1rem 0.75rem' : '1.5rem',
       backgroundImage: 'radial-gradient(ellipse at top, #1e293b26 0%, #0c0d10 80%)'
     }}>
       <div style={{
         backgroundColor: '#14171d',
         border: '1px solid #262c38',
-        borderRadius: '16px',
+        borderRadius: isMobile ? '12px' : '16px',
         width: '100%',
         maxWidth: isRegisterMode ? '560px' : '440px',
-        padding: '2rem',
+        padding: isMobile ? '1.25rem 1rem' : '2rem',
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)',
         transition: 'max-width 0.25s ease'
       }}>

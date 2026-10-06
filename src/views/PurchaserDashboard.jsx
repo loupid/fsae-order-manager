@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { useIsMobile } from '../utils/useMediaQuery';
 import UrgencyBadge from '../components/UrgencyBadge';
 import InvoiceUploadModal from '../components/InvoiceUploadModal';
 import CsvExportModal from '../components/CsvExportModal';
@@ -8,6 +9,7 @@ import { ShoppingCart, PackagePlus, FileText, CheckCircle2, Clock, CheckCheck, D
 
 export default function PurchaserDashboard() {
   const { user } = useAuth();
+  const isMobile = useIsMobile(768);
   const [unassignedRequests, setUnassignedRequests] = useState([]);
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -125,10 +127,10 @@ export default function PurchaserDashboard() {
   };
 
   return (
-    <div style={{ padding: '1.5rem 2rem', maxWidth: '1400px', margin: '0 auto' }}>
+    <div style={{ padding: isMobile ? '1rem' : '1.5rem 2rem', maxWidth: '1400px', margin: '0 auto' }}>
       {/* Header */}
       <div style={{ marginBottom: '1.5rem' }}>
-        <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#f8fafc', margin: '0 0 0.25rem' }}>
+        <h2 style={{ fontSize: isMobile ? '1.25rem' : '1.4rem', fontWeight: '800', color: '#f8fafc', margin: '0 0 0.25rem' }}>
           Tableau de Bord Acheteur (Purchaser Hub)
         </h2>
         <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: 0 }}>
@@ -141,15 +143,15 @@ export default function PurchaserDashboard() {
         backgroundColor: '#161920',
         border: '1px solid #232733',
         borderRadius: '12px',
-        padding: '1.5rem',
+        padding: isMobile ? '1rem' : '1.5rem',
         marginBottom: '2rem'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <ShoppingCart style={{ width: '22px', height: '22px', color: '#10b981' }} />
             <div>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#f8fafc', margin: 0 }}>
-                Entonnoir d'Achat : Demandes en Attente de Commande ({unassignedRequests.length})
+              <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: '#f8fafc', margin: 0 }}>
+                Entonnoir d'Achat : Demandes en Attente ({unassignedRequests.length})
               </h3>
               <span style={{ fontSize: '0.78rem', color: '#64748b' }}>
                 Sélectionnez les pièces d'un même fournisseur pour générer le bon de commande.
@@ -157,7 +159,7 @@ export default function PurchaserDashboard() {
             </div>
           </div>
 
-          {selectedRequestIds.size > 0 && (
+          {!isMobile && selectedRequestIds.size > 0 && (
             <button
               onClick={handleCreatePo}
               disabled={creatingPo}
@@ -208,11 +210,13 @@ export default function PurchaserDashboard() {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: '0.5rem',
                     marginBottom: '0.75rem',
                     paddingBottom: '0.5rem',
                     borderBottom: '1px solid #1e2430'
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
                       <strong style={{ fontSize: '1rem', color: '#f8fafc' }}>{supp}</strong>
                       <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>({items.length} articles)</span>
                       <span style={{ fontSize: '0.82rem', color: '#4ade80', fontWeight: '700' }}>
@@ -223,14 +227,15 @@ export default function PurchaserDashboard() {
                     <button
                       onClick={() => handleSelectAllForSupplier(supp)}
                       style={{
-                        padding: '0.35rem 0.75rem',
+                        padding: isMobile ? '0.5rem 0.85rem' : '0.35rem 0.75rem',
                         backgroundColor: '#1e293b',
                         border: '1px solid #334155',
                         borderRadius: '6px',
                         color: '#cbd5e1',
                         fontSize: '0.75rem',
                         fontWeight: '600',
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        minHeight: isMobile ? '44px' : '36px'
                       }}
                     >
                       Tout sélectionner chez {supp}
@@ -292,6 +297,58 @@ export default function PurchaserDashboard() {
         )}
       </div>
 
+      {/* Sticky Mobile Action Bar for PO Creation */}
+      {isMobile && selectedRequestIds.size > 0 && (
+        <div style={{
+          position: 'fixed',
+          bottom: 'calc(3.85rem + var(--safe-bottom, 0px))',
+          left: '0.75rem',
+          right: '0.75rem',
+          zIndex: 48,
+          backgroundColor: '#064e3b',
+          border: '1px solid #10b981',
+          borderRadius: '10px',
+          padding: '0.75rem 1rem',
+          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.7)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '0.5rem'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
+            <ShoppingCart style={{ width: '18px', height: '18px', color: '#6ee7b7', flexShrink: 0 }} />
+            <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <strong style={{ color: '#f8fafc', fontSize: '0.85rem' }}>{selectedSupplier}</strong>
+              <span style={{ color: '#a7f3d0', fontSize: '0.75rem', marginLeft: '0.35rem' }}>
+                ({selectedRequestIds.size} pièce{selectedRequestIds.size > 1 ? 's' : ''})
+              </span>
+            </div>
+          </div>
+
+          <button
+            onClick={handleCreatePo}
+            disabled={creatingPo}
+            style={{
+              padding: '0.55rem 1.1rem',
+              backgroundColor: '#10b981',
+              color: '#064e3b',
+              border: 'none',
+              borderRadius: '7px',
+              fontWeight: '800',
+              fontSize: '0.82rem',
+              cursor: creatingPo ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              flexShrink: 0
+            }}
+          >
+            <PackagePlus style={{ width: '16px', height: '16px' }} />
+            <span>{creatingPo ? 'Création...' : 'Créer PO'}</span>
+          </button>
+        </div>
+      )}
+
       {/* Generated Purchase Orders Management */}
       <div>
         <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: '#f8fafc', marginBottom: '1rem' }}>
@@ -310,7 +367,7 @@ export default function PurchaserDashboard() {
             Aucun bon de commande créé pour le moment.
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.25rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))', gap: '1.25rem' }}>
             {purchaseOrders.map(po => {
               return (
                 <div key={po.id} style={{
@@ -405,17 +462,18 @@ export default function PurchaserDashboard() {
                             display: 'flex',
                             alignItems: 'center',
                             gap: '0.25rem',
-                            padding: '0.25rem 0.5rem',
+                            padding: isMobile ? '0.45rem 0.65rem' : '0.25rem 0.5rem',
                             backgroundColor: '#064e3b',
                             border: '1px solid #059669',
                             borderRadius: '4px',
                             color: '#6ee7b7',
                             fontSize: '0.72rem',
                             fontWeight: '600',
-                            cursor: 'pointer'
+                            cursor: 'pointer',
+                            minHeight: isMobile ? '44px' : '32px'
                           }}
                         >
-                          <FileSpreadsheet style={{ width: '12px', height: '12px' }} />
+                          <FileSpreadsheet style={{ width: '13px', height: '13px' }} />
                           Exporter CSV
                         </button>
                         <button
@@ -424,17 +482,18 @@ export default function PurchaserDashboard() {
                             display: 'flex',
                             alignItems: 'center',
                             gap: '0.25rem',
-                            padding: '0.25rem 0.5rem',
+                            padding: isMobile ? '0.45rem 0.65rem' : '0.25rem 0.5rem',
                             backgroundColor: '#1e3a8a',
                             border: '1px solid #2563eb',
                             borderRadius: '4px',
                             color: '#93c5fd',
                             fontSize: '0.72rem',
                             fontWeight: '600',
-                            cursor: 'pointer'
+                            cursor: 'pointer',
+                            minHeight: isMobile ? '44px' : '32px'
                           }}
                         >
-                          <FileText style={{ width: '12px', height: '12px' }} />
+                          <FileText style={{ width: '13px', height: '13px' }} />
                           + Attacher PDF
                         </button>
                       </div>
@@ -466,10 +525,13 @@ export default function PurchaserDashboard() {
                                 cursor: 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: '0.2rem'
+                                justifyContent: 'center',
+                                minWidth: '44px',
+                                minHeight: '44px',
+                                padding: '0.3rem'
                               }}
                             >
-                              <Download style={{ width: '13px', height: '13px' }} />
+                              <Download style={{ width: '15px', height: '15px' }} />
                             </button>
                           </div>
                         ))}
@@ -488,6 +550,7 @@ export default function PurchaserDashboard() {
                         onClick={() => handleStatusTransition(po.id, 'ORDERED')}
                         style={{
                           flex: 1,
+                          minHeight: '44px',
                           padding: '0.45rem',
                           backgroundColor: '#0284c7',
                           color: '#fff',
@@ -507,6 +570,7 @@ export default function PurchaserDashboard() {
                         onClick={() => handleStatusTransition(po.id, 'COMPLETED')}
                         style={{
                           flex: 1,
+                          minHeight: '44px',
                           padding: '0.45rem',
                           backgroundColor: '#059669',
                           color: '#fff',
@@ -535,7 +599,8 @@ export default function PurchaserDashboard() {
                         }}
                         title="Annuler le PO"
                         style={{
-                          padding: '0.45rem 0.6rem',
+                          minHeight: '44px',
+                          padding: '0.45rem 0.75rem',
                           backgroundColor: '#27171a',
                           color: '#f87171',
                           border: '1px solid #7f1d1d',
@@ -545,7 +610,7 @@ export default function PurchaserDashboard() {
                           cursor: 'pointer'
                         }}
                       >
-                        <Ban style={{ width: '13px', height: '13px' }} />
+                        <Ban style={{ width: '15px', height: '15px' }} />
                       </button>
                     )}
                   </div>

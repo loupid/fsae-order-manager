@@ -27,6 +27,10 @@ uploads/invoices/*
 
 # Teamwork Multi-Agent Internal Workspaces
 .agents/
+!.agents/rules/
+!.agents/skills/
+!.agents/hooks.json
+!.agents/scripts/
 .coverage/
 
 # Editor directories and files

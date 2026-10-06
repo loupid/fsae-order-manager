@@ -66,6 +66,10 @@ async function runAllTests() {
     await import('./subsystems_management.test.js');
     console.log('\n✨ Tier 7 Subsystems Management Tests Completed Successfully.\n');
 
+    console.log('👉 [TIER 8-PARITY] Running Web & Mobile Parity Sentinel Test Suite...');
+    await import('./web_mobile_parity.test.js');
+    console.log('\n✨ Tier 8 Web & Mobile Parity Tests Completed Successfully.\n');
+
     console.log('====================================================');
     console.log('🏆 ALL TEST SUITES PASSED WITH 100% SUCCESS!');
     console.log('====================================================\n');
