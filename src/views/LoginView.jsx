@@ -9,7 +9,6 @@ import {
   ArrowRight,
   ArrowLeft,
   CheckCircle2,
-  Zap,
   MessageSquare,
   Sparkles,
   ChevronRight
@@ -84,6 +83,18 @@ export default function LoginView() {
   const [step, setStep] = useState(1); // 1, 2, 3
   const [departments, setDepartments] = useState(INITIAL_DEPARTMENTS);
 
+  // Champs du formulaire & questionnaire
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [department, setDepartment] = useState('ELE');
+  const [subsystem, setSubsystem] = useState('');
+  const [discordHandle, setDiscordHandle] = useState('');
+  const [role, setRole] = useState('Member');
+
+  const [submitting, setSubmitting] = useState(false);
+  const [localError, setLocalError] = useState('');
+
   React.useEffect(() => {
     fetch('/api/auth/setup-status')
       .then((r) => r.json())
@@ -120,18 +131,6 @@ export default function LoginView() {
         console.warn('Failed to load public subsystems, using defaults:', err.message);
       });
   }, []);
-
-  // Champs du formulaire & questionnaire
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [department, setDepartment] = useState('ELE');
-  const [subsystem, setSubsystem] = useState('');
-  const [discordHandle, setDiscordHandle] = useState('');
-  const [role, setRole] = useState('Member');
-
-  const [submitting, setSubmitting] = useState(false);
-  const [localError, setLocalError] = useState('');
 
   // Détection du courriel officiel UQTR
   const isUqtrEmail = email.trim().toLowerCase().endsWith('@uqtr.ca');

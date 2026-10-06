@@ -79,19 +79,20 @@ export function createSubsystemsRouter(db = defaultDb) {
 
       const rows = db.prepare(query).all();
       const results = rows.map(r => {
-        const committed_cost = Number(r.committed_cost.toFixed(2));
-        const actual_cost = Number(r.actual_cost.toFixed(2));
+        const allocated = Number(r.budget_allocated) || 0;
+        const committed_cost = Number((Number(r.committed_cost) || 0).toFixed(2));
+        const actual_cost = Number((Number(r.actual_cost) || 0).toFixed(2));
         const totalSpentOrCommitted = Number((committed_cost + actual_cost).toFixed(2));
-        const remaining_budget = Number((r.budget_allocated - totalSpentOrCommitted).toFixed(2));
-        const pct_used = r.budget_allocated > 0 
-          ? Number(((totalSpentOrCommitted / r.budget_allocated) * 100).toFixed(2))
+        const remaining_budget = Number((allocated - totalSpentOrCommitted).toFixed(2));
+        const pct_used = allocated > 0 
+          ? Number(((totalSpentOrCommitted / allocated) * 100).toFixed(2))
           : 0;
 
         return {
           id: r.id,
           name: r.name,
           code: r.code,
-          budget_allocated: r.budget_allocated,
+          budget_allocated: allocated,
           committed_cost,
           actual_cost,
           remaining_budget,

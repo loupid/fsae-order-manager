@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { apiClient } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -7,12 +7,10 @@ import {
   Zap,
   User,
   Search,
-  Filter,
   Trash2,
   CheckCircle2,
   AlertTriangle,
   RefreshCw,
-  Mail,
   ShieldAlert,
   Info
 } from 'lucide-react';
@@ -23,12 +21,6 @@ const DEPARTMENTS = [
   { code: 'DRI', name: 'Team Drivetrain' },
   { code: 'ERG', name: 'Team Ergonomie' },
   { code: 'ADM', name: 'Team Administration' }
-];
-
-const ROLES = [
-  { value: 'Member', label: 'Membre', description: 'Ajout de pièces & suivi de commande' },
-  { value: 'Lead', label: "Chef d'équipe", description: 'Validation, commandes groupées & budget de pôle' },
-  { value: 'Admin', label: 'Admin', description: 'Accès total & gestion de l’équipe' }
 ];
 
 export default function AdminUsersView() {

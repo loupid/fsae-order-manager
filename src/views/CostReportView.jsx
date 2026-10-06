@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '../context/AuthContext';
 import { apiClient } from '../api/client';
-import { BarChart3, DollarSign, PieChart, ShieldCheck, AlertTriangle, Plus, Check, Pencil, X, Trash2, Edit2, Lock } from 'lucide-react';
+import { AlertTriangle, Plus, Pencil, X, Trash2, Edit2, Lock, RefreshCw } from 'lucide-react';
 
 export default function CostReportView() {
   const { isAdmin, canEditBudget, canViewBudget } = useAuth();
   const [subsystems, setSubsystems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   // New subsystem modal / form state
   const [showAddSubsystem, setShowAddSubsystem] = useState(false);
@@ -13,6 +15,7 @@ export default function CostReportView() {
   const [newCode, setNewCode] = useState('');
   const [newBudget, setNewBudget] = useState('');
   const [creating, setCreating] = useState(false);
+  const [addError, setAddError] = useState('');
 
   // Edit subsystem modal / form state
   const [editingSubsystem, setEditingSubsystem] = useState(null);
@@ -23,21 +26,24 @@ export default function CostReportView() {
   const [deletingSubsystem, setDeletingSubsystem] = useState(false);
   const [editError, setEditError] = useState('');
 
-  const loadSubsystems = async () => {
+  const loadSubsystems = useCallback(async () => {
     setLoading(true);
+    setLoadError('');
     try {
       const list = await apiClient.getSubsystems();
-      setSubsystems(list);
+      setSubsystems(Array.isArray(list) ? list : []);
     } catch (err) {
       console.error('Failed to load subsystems:', err);
+      setLoadError(err.message || 'Impossible de charger les données financières');
+      setSubsystems([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadSubsystems();
-  }, []);
+  }, [loadSubsystems]);
 
   const handleAddSubsystem = async (e) => {
     e.preventDefault();
@@ -45,11 +51,12 @@ export default function CostReportView() {
 
     const budgetVal = newBudget ? parseFloat(newBudget) : 0.0;
     if (isNaN(budgetVal) || budgetVal < 0) {
-      alert('Le montant du budget alloué doit être un nombre positif ou nul.');
+      setAddError('Le montant du budget alloué doit être un nombre positif ou nul.');
       return;
     }
 
     setCreating(true);
+    setAddError('');
     try {
       await apiClient.createSubsystem({
         name: newName.trim(),
@@ -62,7 +69,7 @@ export default function CostReportView() {
       setShowAddSubsystem(false);
       await loadSubsystems();
     } catch (err) {
-      alert(err.message || 'Erreur lors de la création du sous-système');
+      setAddError(err.message || 'Erreur lors de la création du sous-système');
     } finally {
       setCreating(false);
     }
@@ -70,9 +77,9 @@ export default function CostReportView() {
 
   const handleOpenEdit = (sub) => {
     setEditingSubsystem(sub);
-    setEditBudget(String(sub.budget_allocated));
-    setEditName(sub.name);
-    setEditCode(sub.code);
+    setEditBudget(String(sub.budget_allocated ?? 0));
+    setEditName(sub.name || '');
+    setEditCode(sub.code || '');
     setEditError('');
   };
 
@@ -136,14 +143,24 @@ export default function CostReportView() {
     }
   };
 
+  if (!canViewBudget) {
+    return (
+      <div style={{ padding: '3rem 2rem', textAlign: 'center', color: '#94a3b8' }}>
+        <Lock style={{ width: '32px', height: '32px', margin: '0 auto 1rem', color: '#ef4444' }} />
+        <h3 style={{ color: '#f8fafc', marginBottom: '0.5rem' }}>Accès Restreint</h3>
+        <p>Vous n'avez pas l'autorisation d'accéder au rapport de coûts FSAE.</p>
+      </div>
+    );
+  }
+
   // Aggregates
-  const totalBudgetAllocated = subsystems.reduce((sum, s) => sum + (s.budget_allocated || 0), 0);
-  const totalCommittedCost = subsystems.reduce((sum, s) => sum + (s.committed_cost || 0), 0);
-  const totalActualCost = subsystems.reduce((sum, s) => sum + (s.actual_cost || 0), 0);
+  const totalBudgetAllocated = subsystems.reduce((sum, s) => sum + (Number(s.budget_allocated) || 0), 0);
+  const totalCommittedCost = subsystems.reduce((sum, s) => sum + (Number(s.committed_cost) || 0), 0);
+  const totalActualCost = subsystems.reduce((sum, s) => sum + (Number(s.actual_cost) || 0), 0);
   const totalSpend = totalCommittedCost + totalActualCost;
   const overallRemaining = totalBudgetAllocated - totalSpend;
   const overallPctUsed = totalBudgetAllocated > 0 ? ((totalSpend / totalBudgetAllocated) * 100) : 0;
-  const overBudgetSubsystems = subsystems.filter(s => s.remaining_budget < 0 || s.pct_used > 100);
+  const overBudgetSubsystems = subsystems.filter(s => (Number(s.remaining_budget) || 0) < 0 || (Number(s.pct_used) || 0) > 100);
 
   return (
     <div style={{ padding: '1.5rem 2rem', maxWidth: '1400px', margin: '0 auto' }}>
@@ -176,9 +193,12 @@ export default function CostReportView() {
             </span>
           )}
 
-          {canEditBudget && (
+          {isAdmin && (
             <button
-              onClick={() => setShowAddSubsystem(true)}
+              onClick={() => {
+                setAddError('');
+                setShowAddSubsystem(true);
+              }}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -199,6 +219,46 @@ export default function CostReportView() {
           )}
         </div>
       </div>
+
+      {/* Network / Load Error Banner */}
+      {loadError && (
+        <div style={{
+          backgroundColor: '#451a1a',
+          border: '1px solid #dc2626',
+          borderRadius: '10px',
+          padding: '0.85rem 1.25rem',
+          marginBottom: '1.5rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '1rem',
+          color: '#f87171'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+            <AlertTriangle style={{ width: '20px', height: '20px', flexShrink: 0, color: '#ef4444' }} />
+            <span style={{ fontSize: '0.88rem' }}>{loadError}</span>
+          </div>
+          <button
+            onClick={loadSubsystems}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              padding: '0.4rem 0.85rem',
+              borderRadius: '6px',
+              backgroundColor: '#ef4444',
+              color: '#fff',
+              border: 'none',
+              fontSize: '0.8rem',
+              fontWeight: '700',
+              cursor: 'pointer'
+            }}
+          >
+            <RefreshCw style={{ width: '14px', height: '14px' }} />
+            Réessayer
+          </button>
+        </div>
+      )}
 
       {/* Over-Budget Alert Banner */}
       {overBudgetSubsystems.length > 0 && (
@@ -274,6 +334,9 @@ export default function CostReportView() {
           }}>
             ${overallRemaining.toFixed(2)} <span style={{ fontSize: '0.85rem', fontWeight: '600', color: '#64748b' }}>CAD</span>
           </div>
+          <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
+            {overallPctUsed.toFixed(1)}% du budget consommé
+          </div>
         </div>
       </div>
 
@@ -306,212 +369,140 @@ export default function CostReportView() {
                 <th style={{ padding: '0.85rem 1.25rem', textAlign: 'right' }}>Réalisé</th>
                 <th style={{ padding: '0.85rem 1.25rem', textAlign: 'right' }}>Restant</th>
                 <th style={{ padding: '0.85rem 1.25rem', minWidth: '180px' }}>Consommation</th>
-                {isAdmin && <th style={{ padding: '0.85rem 1.25rem', textAlign: 'center', width: '100px' }}>Actions</th>}
+                {canEditBudget && <th style={{ padding: '0.85rem 1.25rem', textAlign: 'center', width: '100px' }}>Actions</th>}
               </tr>
             </thead>
             <tbody>
-              {subsystems.map(s => {
-                const isOverBudget = s.remaining_budget < 0;
-                const barColor = isOverBudget ? '#ef4444' : s.pct_used > 80 ? '#f59e0b' : '#10b981';
+              {subsystems.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={canEditBudget ? 8 : 7}
+                    style={{
+                      padding: '2.5rem',
+                      textAlign: 'center',
+                      color: '#94a3b8',
+                      fontSize: '0.9rem'
+                    }}
+                  >
+                    {loadError ? 'Impossible d’afficher les sous-systèmes suite à une erreur.' : 'Aucun sous-système configuré pour le moment.'}
+                  </td>
+                </tr>
+              ) : (
+                subsystems.map(s => {
+                  const budgetAllocated = Number(s.budget_allocated) || 0;
+                  const committedCost = Number(s.committed_cost) || 0;
+                  const actualCost = Number(s.actual_cost) || 0;
+                  const remainingBudget = Number(s.remaining_budget) || 0;
+                  const pctUsed = Number(s.pct_used) || 0;
+                  const isOverBudget = remainingBudget < 0;
+                  const barColor = isOverBudget ? '#ef4444' : pctUsed > 80 ? '#f59e0b' : '#10b981';
 
-                return (
-                  <tr key={s.id} style={{ borderBottom: '1px solid #1c202a' }}>
-                    <td style={{ padding: '0.85rem 1.25rem' }}>
-                      <span style={{ padding: '0.2rem 0.5rem', borderRadius: '4px', backgroundColor: '#1e293b', color: '#cbd5e1', fontWeight: '700', fontSize: '0.75rem' }}>
-                        {s.code}
-                      </span>
-                    </td>
-                    <td style={{ padding: '0.85rem 1.25rem', fontWeight: '700', color: '#f8fafc' }}>
-                      {s.name}
-                    </td>
-                    <td style={{ padding: '0.85rem 1.25rem', textAlign: 'right', color: '#f1f5f9', fontWeight: '600' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                        <span>${Number(s.budget_allocated).toFixed(2)}</span>
-                        {canEditBudget && (
+                  return (
+                    <tr key={s.id || s.code} style={{ borderBottom: '1px solid #1c202a' }}>
+                      <td style={{ padding: '0.85rem 1.25rem' }}>
+                        <span style={{ padding: '0.2rem 0.5rem', borderRadius: '4px', backgroundColor: '#1e293b', color: '#cbd5e1', fontWeight: '700', fontSize: '0.75rem' }}>
+                          {s.code}
+                        </span>
+                      </td>
+                      <td style={{ padding: '0.85rem 1.25rem', fontWeight: '700', color: '#f8fafc' }}>
+                        {s.name}
+                      </td>
+                      <td style={{ padding: '0.85rem 1.25rem', textAlign: 'right', color: '#f1f5f9', fontWeight: '600' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                          <span>${budgetAllocated.toFixed(2)}</span>
+                          {canEditBudget && (
+                            <button
+                              onClick={() => handleOpenEdit(s)}
+                              title="Modifier le budget alloué"
+                              style={{
+                                background: 'transparent',
+                                border: '1px solid #334155',
+                                color: '#94a3b8',
+                                borderRadius: '4px',
+                                padding: '0.2rem 0.35rem',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                transition: 'all 0.15s'
+                              }}
+                              onMouseEnter={(e) => { e.currentTarget.style.color = '#38bdf8'; e.currentTarget.style.borderColor = '#38bdf8'; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.borderColor = '#334155'; }}
+                            >
+                              <Edit2 style={{ width: '13px', height: '13px' }} />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                      <td style={{ padding: '0.85rem 1.25rem', textAlign: 'right', color: '#38bdf8' }}>
+                        ${committedCost.toFixed(2)}
+                      </td>
+                      <td style={{ padding: '0.85rem 1.25rem', textAlign: 'right', color: '#a855f7' }}>
+                        ${actualCost.toFixed(2)}
+                      </td>
+                      <td style={{
+                        padding: '0.85rem 1.25rem',
+                        textAlign: 'right',
+                        fontWeight: '800',
+                        color: isOverBudget ? '#f87171' : '#4ade80'
+                      }}>
+                        ${remainingBudget.toFixed(2)}
+                      </td>
+                      <td style={{ padding: '0.85rem 1.25rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <div style={{
+                            flex: 1,
+                            height: '8px',
+                            backgroundColor: '#0f1115',
+                            borderRadius: '9999px',
+                            overflow: 'hidden',
+                            border: '1px solid #262d3d'
+                          }}>
+                            <div style={{
+                              height: '100%',
+                              width: `${Math.min(pctUsed, 100)}%`,
+                              backgroundColor: barColor,
+                              borderRadius: '9999px',
+                              transition: 'width 0.3s ease'
+                            }} />
+                          </div>
+                          <span style={{ fontSize: '0.75rem', fontWeight: '700', color: barColor, minWidth: '40px', textAlign: 'right' }}>
+                            {pctUsed ? `${pctUsed}%` : '0%'}
+                          </span>
+                        </div>
+                      </td>
+                      {canEditBudget && (
+                        <td style={{ padding: '0.85rem 1.25rem', textAlign: 'center' }}>
                           <button
                             onClick={() => handleOpenEdit(s)}
-                            title="Modifier le budget alloué"
                             style={{
-                              background: 'transparent',
-                              border: '1px solid #334155',
-                              color: '#94a3b8',
-                              borderRadius: '4px',
-                              padding: '0.2rem 0.35rem',
-                              cursor: 'pointer',
                               display: 'inline-flex',
                               alignItems: 'center',
-                              justifyContent: 'center',
-                              transition: 'all 0.15s'
+                              gap: '0.35rem',
+                              padding: '0.35rem 0.65rem',
+                              backgroundColor: '#1e293b',
+                              border: '1px solid #334155',
+                              borderRadius: '6px',
+                              color: '#38bdf8',
+                              fontSize: '0.75rem',
+                              fontWeight: '600',
+                              cursor: 'pointer'
                             }}
-                            onMouseEnter={(e) => { e.currentTarget.style.color = '#38bdf8'; e.currentTarget.style.borderColor = '#38bdf8'; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.borderColor = '#334155'; }}
+                            title={isAdmin ? `Modifier [${s.code}] ${s.name}` : `Modifier le budget de [${s.code}]`}
                           >
-                            <Edit2 style={{ width: '13px', height: '13px' }} />
+                            <Pencil style={{ width: '13px', height: '13px' }} />
+                            <span>Modifier</span>
                           </button>
-                        )}
-                      </div>
-                    </td>
-                    <td style={{ padding: '0.85rem 1.25rem', textAlign: 'right', color: '#38bdf8' }}>
-                      ${Number(s.committed_cost).toFixed(2)}
-                    </td>
-                    <td style={{ padding: '0.85rem 1.25rem', textAlign: 'right', color: '#a855f7' }}>
-                      ${Number(s.actual_cost).toFixed(2)}
-                    </td>
-                    <td style={{
-                      padding: '0.85rem 1.25rem',
-                      textAlign: 'right',
-                      fontWeight: '800',
-                      color: isOverBudget ? '#f87171' : '#4ade80'
-                    }}>
-                      ${Number(s.remaining_budget).toFixed(2)}
-                    </td>
-                    <td style={{ padding: '0.85rem 1.25rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <div style={{
-                          flex: 1,
-                          height: '8px',
-                          backgroundColor: '#0f1115',
-                          borderRadius: '9999px',
-                          overflow: 'hidden',
-                          border: '1px solid #262d3d'
-                        }}>
-                          <div style={{
-                            height: '100%',
-                            width: `${Math.min(s.pct_used || 0, 100)}%`,
-                            backgroundColor: barColor,
-                            borderRadius: '9999px',
-                            transition: 'width 0.3s ease'
-                          }} />
-                        </div>
-                        <span style={{ fontSize: '0.75rem', fontWeight: '700', color: barColor, minWidth: '40px', textAlign: 'right' }}>
-                          {s.pct_used ? `${s.pct_used}%` : '0%'}
-                        </span>
-                      </div>
-                    </td>
-                    {isAdmin && (
-                      <td style={{ padding: '0.85rem 1.25rem', textAlign: 'center' }}>
-                        <button
-                          onClick={() => handleOpenEdit(s)}
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.35rem',
-                            padding: '0.35rem 0.65rem',
-                            backgroundColor: '#1e293b',
-                            border: '1px solid #334155',
-                            borderRadius: '6px',
-                            color: '#38bdf8',
-                            fontSize: '0.75rem',
-                            fontWeight: '600',
-                            cursor: 'pointer'
-                          }}
-                          title={`Modifier le budget de [${s.code}] ${s.name}`}
-                        >
-                          <Pencil style={{ width: '13px', height: '13px' }} />
-                          <span>Modifier</span>
-                        </button>
-                      </td>
-                    )}
-                  </tr>
-                );
-              })}
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         )}
       </div>
-
-      {/* Edit Budget Modal */}
-      {editingSubsystem && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.75)',
-          backdropFilter: 'blur(4px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 50,
-          padding: '1rem'
-        }}>
-          <div style={{
-            backgroundColor: '#161920',
-            border: '1px solid #2d3342',
-            borderRadius: '12px',
-            width: '100%',
-            maxWidth: '440px',
-            padding: '1.5rem',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)'
-          }}>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#f8fafc', margin: '0 0 0.5rem' }}>
-              Modifier le Budget — {editingSubsystem.name}
-            </h3>
-            <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '0 0 1.25rem' }}>
-              Pôle : <span style={{ color: '#6ee7b7', fontWeight: '700' }}>{editingSubsystem.code}</span> • Définir la nouvelle enveloppe budgétaire allouée.
-            </p>
-
-            <form onSubmit={handleSaveBudget} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: '#cbd5e1', marginBottom: '0.35rem' }}>
-                  Nouveau Budget Alloué ($ CAD) *
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  required
-                  value={editBudgetValue}
-                  onChange={(e) => setEditBudgetValue(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '0.65rem 0.85rem',
-                    backgroundColor: '#0f1115',
-                    border: '1px solid #334155',
-                    borderRadius: '6px',
-                    color: '#f8fafc',
-                    fontSize: '0.9rem',
-                    boxSizing: 'border-box'
-                  }}
-                />
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
-                <button
-                  type="button"
-                  onClick={() => setEditingSubsystem(null)}
-                  style={{
-                    padding: '0.55rem 1rem',
-                    borderRadius: '6px',
-                    border: '1px solid #334155',
-                    backgroundColor: 'transparent',
-                    color: '#cbd5e1',
-                    fontWeight: '600',
-                    fontSize: '0.85rem',
-                    cursor: 'pointer'
-                  }}
-                >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  disabled={savingBudget}
-                  style={{
-                    padding: '0.55rem 1.25rem',
-                    borderRadius: '6px',
-                    border: 'none',
-                    backgroundColor: '#059669',
-                    color: '#fff',
-                    fontWeight: '700',
-                    fontSize: '0.85rem',
-                    cursor: savingBudget ? 'not-allowed' : 'pointer'
-                  }}
-                >
-                  {savingBudget ? 'Enregistrement...' : 'Enregistrer le Budget'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* Add Subsystem Modal */}
       {showAddSubsystem && (
@@ -534,9 +525,31 @@ export default function CostReportView() {
             maxWidth: '450px',
             padding: '1.5rem'
           }}>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#f8fafc', margin: '0 0 1rem' }}>
-              Ajouter un Sous-Système FSAE
-            </h3>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#f8fafc', margin: 0 }}>
+                Ajouter un Sous-Système FSAE
+              </h3>
+              <button
+                onClick={() => setShowAddSubsystem(false)}
+                style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '0.2rem' }}
+              >
+                <X style={{ width: '18px', height: '18px' }} />
+              </button>
+            </div>
+
+            {addError && (
+              <div style={{
+                backgroundColor: '#451a1a',
+                border: '1px solid #dc2626',
+                color: '#f87171',
+                padding: '0.65rem 0.85rem',
+                borderRadius: '6px',
+                fontSize: '0.82rem',
+                marginBottom: '1rem'
+              }}>
+                {addError}
+              </div>
+            )}
 
             <form onSubmit={handleAddSubsystem} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
@@ -555,16 +568,16 @@ export default function CostReportView() {
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: '#cbd5e1', marginBottom: '0.35rem' }}>
-                  Code Tri-lettres *
+                  Code (Trigramme) *
                 </label>
                 <input
                   type="text"
                   required
-                  maxLength="5"
+                  maxLength={10}
                   value={newCode}
-                  onChange={(e) => setNewCode(e.target.value)}
+                  onChange={(e) => setNewCode(e.target.value.toUpperCase())}
                   placeholder="ex: AER"
-                  style={{ width: '100%', padding: '0.6rem', backgroundColor: '#0f1115', border: '1px solid #334155', borderRadius: '6px', color: '#f8fafc', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                  style={{ width: '100%', padding: '0.6rem', backgroundColor: '#0f1115', border: '1px solid #334155', borderRadius: '6px', color: '#f8fafc', fontSize: '0.85rem', fontWeight: '700', boxSizing: 'border-box' }}
                 />
               </div>
 
@@ -627,7 +640,7 @@ export default function CostReportView() {
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
               <h3 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#f8fafc', margin: 0 }}>
-                Modifier Budget : [{editingSubsystem.code}]
+                {isAdmin ? `Modifier Sous-Système : [${editingSubsystem.code}]` : `Modifier Budget : [${editingSubsystem.code}]`}
               </h3>
               <button
                 onClick={() => setEditingSubsystem(null)}
@@ -661,9 +674,10 @@ export default function CostReportView() {
                     type="text"
                     required
                     maxLength={10}
+                    disabled={!isAdmin}
                     value={editCode}
                     onChange={(e) => setEditCode(e.target.value.toUpperCase())}
-                    style={{ width: '100%', padding: '0.6rem', backgroundColor: '#0f1115', border: '1px solid #334155', borderRadius: '6px', color: '#f8fafc', fontSize: '0.85rem', fontWeight: '700', boxSizing: 'border-box' }}
+                    style={{ width: '100%', padding: '0.6rem', backgroundColor: '#0f1115', border: '1px solid #334155', borderRadius: '6px', color: '#f8fafc', fontSize: '0.85rem', fontWeight: '700', boxSizing: 'border-box', opacity: !isAdmin ? 0.6 : 1, cursor: !isAdmin ? 'not-allowed' : 'text' }}
                   />
                 </div>
                 <div>
@@ -673,9 +687,10 @@ export default function CostReportView() {
                   <input
                     type="text"
                     required
+                    disabled={!isAdmin}
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
-                    style={{ width: '100%', padding: '0.6rem', backgroundColor: '#0f1115', border: '1px solid #334155', borderRadius: '6px', color: '#f8fafc', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                    style={{ width: '100%', padding: '0.6rem', backgroundColor: '#0f1115', border: '1px solid #334155', borderRadius: '6px', color: '#f8fafc', fontSize: '0.85rem', boxSizing: 'border-box', opacity: !isAdmin ? 0.6 : 1, cursor: !isAdmin ? 'not-allowed' : 'text' }}
                   />
                 </div>
               </div>
@@ -696,28 +711,30 @@ export default function CostReportView() {
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                <button
-                  type="button"
-                  onClick={handleDeleteSubsystem}
-                  disabled={deletingSubsystem || savingEdit}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.35rem',
-                    padding: '0.55rem 0.85rem',
-                    borderRadius: '6px',
-                    border: '1px solid #7f1d1d',
-                    backgroundColor: '#451a1a',
-                    color: '#f87171',
-                    fontWeight: '600',
-                    fontSize: '0.82rem',
-                    cursor: (deletingSubsystem || savingEdit) ? 'not-allowed' : 'pointer'
-                  }}
-                  title="Supprimer ce sous-système (si aucune pièce n'est associée)"
-                >
-                  <Trash2 style={{ width: '14px', height: '14px' }} />
-                  <span>{deletingSubsystem ? 'Suppression...' : 'Supprimer'}</span>
-                </button>
+                {isAdmin ? (
+                  <button
+                    type="button"
+                    onClick={handleDeleteSubsystem}
+                    disabled={deletingSubsystem || savingEdit}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      padding: '0.55rem 0.85rem',
+                      borderRadius: '6px',
+                      border: '1px solid #7f1d1d',
+                      backgroundColor: '#451a1a',
+                      color: '#f87171',
+                      fontWeight: '600',
+                      fontSize: '0.82rem',
+                      cursor: (deletingSubsystem || savingEdit) ? 'not-allowed' : 'pointer'
+                    }}
+                    title="Supprimer ce sous-système (si aucune pièce n'est associée)"
+                  >
+                    <Trash2 style={{ width: '14px', height: '14px' }} />
+                    <span>{deletingSubsystem ? 'Suppression...' : 'Supprimer'}</span>
+                  </button>
+                ) : <div />}
 
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
                   <button

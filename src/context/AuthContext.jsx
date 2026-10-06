@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { apiClient, getStoredToken, setStoredToken } from '../api/client';
 
 const AuthContext = createContext(null);
@@ -82,7 +82,7 @@ export function AuthProvider({ children }) {
   const isPurchaserOrAdmin = isAdmin || isLead;
 
   const canOrder = isAdmin || isLead;
-  const canViewBudget = isAdmin || isLead;
+  const canViewBudget = !!user;
   const dept = (user?.department || '').trim().toUpperCase();
   const sub = (user?.subsystem || '').trim().toUpperCase();
   const canEditBudget = isAdmin || (isLead && (

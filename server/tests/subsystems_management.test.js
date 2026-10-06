@@ -210,6 +210,25 @@ async function runSubsystemsTests() {
       assert.strictEqual(updatedInList.budget_allocated, 18500.50);
     });
 
+    await test('GET /api/subsystems allows Member role to retrieve all financial aggregations', async () => {
+      const res = await fetch(`${baseUrl}/api/subsystems`, {
+        headers: { Authorization: `Bearer ${memberToken}` }
+      });
+      assert.strictEqual(res.status, 200);
+      const data = await res.json();
+      assert.ok(Array.isArray(data));
+      assert.ok(data.length >= 5);
+      const ele = data.find(s => s.code === 'ELE');
+      assert.ok(ele);
+      assert.strictEqual(typeof ele.budget_allocated, 'number');
+      assert.strictEqual(typeof ele.committed_cost, 'number');
+      assert.strictEqual(typeof ele.actual_cost, 'number');
+      assert.strictEqual(typeof ele.remaining_budget, 'number');
+      assert.strictEqual(typeof ele.pct_used, 'number');
+      assert.ok(!isNaN(ele.remaining_budget));
+      assert.ok(!isNaN(ele.pct_used));
+    });
+
     await test('PATCH /api/subsystems/:id allows Admin to update name and code with uniqueness check', async () => {
       // Create temporary subsystem
       const createRes = await fetch(`${baseUrl}/api/subsystems`, {
