@@ -252,40 +252,96 @@ export default function PurchaserDashboard() {
                           onClick={() => handleToggleRequest(item.id, supp)}
                           style={{
                             display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            padding: '0.55rem 0.85rem',
-                            borderRadius: '6px',
+                            flexDirection: isMobile ? 'column' : 'row',
+                            alignItems: isMobile ? 'stretch' : 'center',
+                            justifyContent: isMobile ? 'flex-start' : 'space-between',
+                            gap: isMobile ? '0.35rem' : '0.5rem',
+                            padding: isMobile ? '0.65rem 0.85rem' : '0.55rem 0.85rem',
+                            borderRadius: '8px',
                             backgroundColor: isSelected ? '#064e3b33' : '#14171e',
                             border: isSelected ? '1px solid #10b981' : '1px solid #1f242e',
                             cursor: 'pointer',
                             transition: 'all 0.15s'
                           }}
                         >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() => {}}
-                              style={{ cursor: 'pointer' }}
-                            />
-                            <UrgencyBadge level={item.urgency_level} />
-                            <div>
-                              <span style={{ fontWeight: '600', color: '#f1f5f9', fontSize: '0.85rem' }}>
-                                {item.description}
-                              </span>
-                              <span style={{ fontSize: '0.72rem', color: '#64748b', marginLeft: '0.5rem' }}>
-                                [{item.subsystem_code || 'GEN'}] SKU: {item.sku || 'N/A'} • Par {item.requester_name}
-                              </span>
-                            </div>
-                          </div>
+                          {isMobile ? (
+                            <>
+                              {/* Ligne 1: Checkbox + Urgence + Titre + Code sous-système */}
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', minWidth: 0, flex: 1 }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => {}}
+                                    style={{ width: '18px', height: '18px', cursor: 'pointer', flexShrink: 0, accentColor: '#10b981' }}
+                                  />
+                                  <UrgencyBadge level={item.urgency_level} />
+                                  <span style={{ fontWeight: '700', color: '#f1f5f9', fontSize: '0.88rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {item.description}
+                                  </span>
+                                </div>
+                                <span style={{
+                                  fontSize: '0.68rem',
+                                  padding: '0.15rem 0.45rem',
+                                  borderRadius: '4px',
+                                  backgroundColor: '#1e293b',
+                                  color: '#94a3b8',
+                                  fontWeight: '700',
+                                  flexShrink: 0
+                                }}>
+                                  {item.subsystem_code || 'GEN'}
+                                </span>
+                              </div>
 
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.82rem' }}>
-                            <span style={{ color: '#94a3b8' }}>x{item.quantity}</span>
-                            <span style={{ fontWeight: '700', color: '#4ade80' }}>
-                              ${(Number(item.unit_price_est || 0) * item.quantity).toFixed(2)}
-                            </span>
-                          </div>
+                              {/* Ligne 2: SKU & Demandeur à gauche, Quantité & Total à droite */}
+                              <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                fontSize: '0.75rem',
+                                paddingLeft: '1.75rem',
+                                color: '#64748b'
+                              }}>
+                                <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {item.sku ? <span>SKU: {item.sku} • </span> : null}
+                                  Par <span style={{ color: '#cbd5e1' }}>{item.requester_name}</span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
+                                  <span style={{ color: '#cbd5e1', fontWeight: '700' }}>x{item.quantity}</span>
+                                  <span style={{ fontWeight: '800', color: '#4ade80', fontSize: '0.85rem' }}>
+                                    ${(Number(item.unit_price_est || 0) * item.quantity).toFixed(2)} CAD
+                                  </span>
+                                </div>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => {}}
+                                  style={{ cursor: 'pointer' }}
+                                />
+                                <UrgencyBadge level={item.urgency_level} />
+                                <div>
+                                  <span style={{ fontWeight: '600', color: '#f1f5f9', fontSize: '0.85rem' }}>
+                                    {item.description}
+                                  </span>
+                                  <span style={{ fontSize: '0.72rem', color: '#64748b', marginLeft: '0.5rem' }}>
+                                    [{item.subsystem_code || 'GEN'}] SKU: {item.sku || 'N/A'} • Par {item.requester_name}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.82rem' }}>
+                                <span style={{ color: '#94a3b8' }}>x{item.quantity}</span>
+                                <span style={{ fontWeight: '700', color: '#4ade80' }}>
+                                  ${(Number(item.unit_price_est || 0) * item.quantity).toFixed(2)}
+                                </span>
+                              </div>
+                            </>
+                          )}
                         </div>
                       );
                     })}
@@ -298,56 +354,63 @@ export default function PurchaserDashboard() {
       </div>
 
       {/* Sticky Mobile Action Bar for PO Creation */}
-      {isMobile && selectedRequestIds.size > 0 && (
-        <div style={{
-          position: 'fixed',
-          bottom: 'calc(3.85rem + var(--safe-bottom, 0px))',
-          left: '0.75rem',
-          right: '0.75rem',
-          zIndex: 48,
-          backgroundColor: '#064e3b',
-          border: '1px solid #10b981',
-          borderRadius: '10px',
-          padding: '0.75rem 1rem',
-          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.7)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '0.5rem'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
-            <ShoppingCart style={{ width: '18px', height: '18px', color: '#6ee7b7', flexShrink: 0 }} />
-            <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              <strong style={{ color: '#f8fafc', fontSize: '0.85rem' }}>{selectedSupplier}</strong>
-              <span style={{ color: '#a7f3d0', fontSize: '0.75rem', marginLeft: '0.35rem' }}>
-                ({selectedRequestIds.size} pièce{selectedRequestIds.size > 1 ? 's' : ''})
-              </span>
-            </div>
-          </div>
+      {isMobile && selectedRequestIds.size > 0 && (() => {
+        const selectedTotal = Array.from(selectedRequestIds).reduce((sum, id) => {
+          const it = unassignedRequests.find(r => r.id === id);
+          return sum + (it ? (Number(it.unit_price_est || 0) * it.quantity) : 0);
+        }, 0);
 
-          <button
-            onClick={handleCreatePo}
-            disabled={creatingPo}
-            style={{
-              padding: '0.55rem 1.1rem',
-              backgroundColor: '#10b981',
-              color: '#064e3b',
-              border: 'none',
-              borderRadius: '7px',
-              fontWeight: '800',
-              fontSize: '0.82rem',
-              cursor: creatingPo ? 'not-allowed' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              flexShrink: 0
-            }}
-          >
-            <PackagePlus style={{ width: '16px', height: '16px' }} />
-            <span>{creatingPo ? 'Création...' : 'Créer PO'}</span>
-          </button>
-        </div>
-      )}
+        return (
+          <div style={{
+            position: 'fixed',
+            bottom: 'calc(3.85rem + var(--safe-bottom, 0px))',
+            left: '0.75rem',
+            right: '0.75rem',
+            zIndex: 48,
+            backgroundColor: '#064e3b',
+            border: '1px solid #10b981',
+            borderRadius: '10px',
+            padding: '0.75rem 1rem',
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '0.5rem'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
+              <ShoppingCart style={{ width: '18px', height: '18px', color: '#6ee7b7', flexShrink: 0 }} />
+              <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <strong style={{ color: '#f8fafc', fontSize: '0.85rem' }}>{selectedSupplier}</strong>
+                <span style={{ color: '#a7f3d0', fontSize: '0.75rem', marginLeft: '0.35rem' }}>
+                  ({selectedRequestIds.size} pièce{selectedRequestIds.size > 1 ? 's' : ''} • ${selectedTotal.toFixed(2)} CAD)
+                </span>
+              </div>
+            </div>
+
+            <button
+              onClick={handleCreatePo}
+              disabled={creatingPo}
+              style={{
+                padding: '0.55rem 1.1rem',
+                backgroundColor: '#10b981',
+                color: '#064e3b',
+                border: 'none',
+                borderRadius: '7px',
+                fontWeight: '800',
+                fontSize: '0.82rem',
+                cursor: creatingPo ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                flexShrink: 0
+              }}
+            >
+              <PackagePlus style={{ width: '16px', height: '16px' }} />
+              <span>{creatingPo ? 'Création...' : 'Créer PO'}</span>
+            </button>
+          </div>
+        );
+      })()}
 
       {/* Generated Purchase Orders Management */}
       <div>

@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useIsMobile } from '../utils/useMediaQuery';
 import UrgencyBadge from '../components/UrgencyBadge';
 import PartRequestModal from '../components/PartRequestModal';
-import { Plus, Search, Filter, ExternalLink, Trash2, Clock, CheckCircle2, PackageCheck, XCircle } from 'lucide-react';
+import { Plus, Search, Filter, ExternalLink, Trash2, Clock, CheckCircle2, PackageCheck, XCircle, X } from 'lucide-react';
 
 export default function MemberFunnelView() {
   const { user, isAdmin } = useAuth();
@@ -149,7 +149,7 @@ export default function MemberFunnelView() {
             onChange={(e) => setSearch(e.target.value)}
             style={{
               width: '100%',
-              padding: '0.55rem 0.75rem 0.55rem 2.2rem',
+              padding: search ? '0.55rem 2.2rem 0.55rem 2.2rem' : '0.55rem 0.75rem 0.55rem 2.2rem',
               backgroundColor: '#0f1115',
               border: '1px solid #2d3342',
               borderRadius: '6px',
@@ -158,6 +158,30 @@ export default function MemberFunnelView() {
               boxSizing: 'border-box'
             }}
           />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              style={{
+                position: 'absolute',
+                right: '0.5rem',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'transparent',
+                border: 'none',
+                color: '#94a3b8',
+                cursor: 'pointer',
+                padding: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minWidth: '28px',
+                minHeight: '28px'
+              }}
+              title="Effacer la recherche"
+            >
+              <X style={{ width: '14px', height: '14px' }} />
+            </button>
+          )}
         </div>
 
         {/* Filters: Mobile Horizontal Scroll-Snap Chips vs Desktop Grid */}
@@ -342,6 +366,42 @@ export default function MemberFunnelView() {
             </select>
           </div>
         )}
+
+        {/* Results counter & quick reset */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          fontSize: '0.75rem',
+          color: '#64748b',
+          padding: '0.2rem 0.25rem 0',
+          borderTop: '1px solid #1f242e'
+        }}>
+          <span>
+            {filteredRequests.length} demande{filteredRequests.length > 1 ? 's' : ''} {requests.length > 0 && requests.length !== filteredRequests.length ? `sur ${requests.length}` : ''}
+          </span>
+          {(search || selectedSubsystem || selectedUrgency || selectedStatus) && (
+            <button
+              onClick={() => {
+                setSearch('');
+                setSelectedSubsystem('');
+                setSelectedUrgency('');
+                setSelectedStatus('');
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#38bdf8',
+                fontSize: '0.75rem',
+                cursor: 'pointer',
+                padding: '0.2rem 0.4rem',
+                textDecoration: 'underline'
+              }}
+            >
+              Réinitialiser
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Requests Content: Loading / Empty / Data */}
@@ -642,7 +702,7 @@ export default function MemberFunnelView() {
           }}
         >
           <Plus style={{ width: '20px', height: '20px' }} />
-          <span>+ Demande</span>
+          <span>Demande</span>
         </button>
       )}
 

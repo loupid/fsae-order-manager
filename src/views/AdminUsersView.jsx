@@ -13,7 +13,10 @@ import {
   AlertTriangle,
   RefreshCw,
   ShieldAlert,
-  Info
+  Info,
+  Lock,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 
 const DEPARTMENTS = [
@@ -36,6 +39,9 @@ export default function AdminUsersView() {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [deptFilter, setDeptFilter] = useState('ALL');
+
+  // Security rules banner collapse state
+  const [showMobileRules, setShowMobileRules] = useState(false);
 
   // Delete modal state
   const [userToDelete, setUserToDelete] = useState(null);
@@ -295,23 +301,56 @@ export default function AdminUsersView() {
         </div>
       </div>
 
-      {/* Rules & Safeguards Info Banner */}
+      {/* Rules & Safeguards Info Banner (collapsible on mobile) */}
       <div style={{
         backgroundColor: '#172033',
         border: '1px solid #1e3a8a',
         borderRadius: '10px',
-        padding: '0.85rem 1.15rem',
-        marginBottom: '1.5rem',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.75rem',
+        padding: isMobile ? '0.65rem 0.85rem' : '0.85rem 1.15rem',
+        marginBottom: '1.25rem',
         fontSize: '0.8rem',
         color: '#93c5fd'
       }}>
-        <Info style={{ width: '20px', height: '20px', flexShrink: 0, color: '#60a5fa' }} />
-        <div>
-          <strong>Règles d'accès et sécurité :</strong> Un Administrateur ne peut ni se rétrograder lui-même ni supprimer son propre compte, et le dernier administrateur est protégé contre toute rétrogradation. Seuls les <strong>Chefs d'équipe du pôle Team Administration (ADM)</strong> et les <strong>Administrateurs</strong> peuvent éditer les budgets du Cost Report.
-        </div>
+        {isMobile ? (
+          <div>
+            <div
+              onClick={() => setShowMobileRules(prev => !prev)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                cursor: 'pointer',
+                fontWeight: '700',
+                userSelect: 'none'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Info style={{ width: '16px', height: '16px', color: '#60a5fa', flexShrink: 0 }} />
+                <span>Règles d'accès et sécurité</span>
+              </div>
+              {showMobileRules ? (
+                <ChevronUp style={{ width: '16px', height: '16px', color: '#60a5fa' }} />
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.72rem', color: '#60a5fa' }}>
+                  <span>Afficher</span>
+                  <ChevronDown style={{ width: '14px', height: '14px' }} />
+                </div>
+              )}
+            </div>
+            {showMobileRules && (
+              <div style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid #1e3a8a55', lineHeight: '1.45', fontSize: '0.78rem' }}>
+                Un Administrateur ne peut ni se rétrograder lui-même ni supprimer son propre compte, et le dernier administrateur est protégé. Seuls les <strong>Chefs du pôle Administration (ADM)</strong> et les <strong>Administrateurs</strong> peuvent éditer les budgets du Cost Report.
+              </div>
+            )}
+          </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <Info style={{ width: '20px', height: '20px', flexShrink: 0, color: '#60a5fa' }} />
+            <div>
+              <strong>Règles d'accès et sécurité :</strong> Un Administrateur ne peut ni se rétrograder lui-même ni supprimer son propre compte, et le dernier administrateur est protégé contre toute rétrogradation. Seuls les <strong>Chefs d'équipe du pôle Team Administration (ADM)</strong> et les <strong>Administrateurs</strong> peuvent éditer les budgets du Cost Report.
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Filters & Search Toolbar */}
@@ -349,24 +388,30 @@ export default function AdminUsersView() {
         </div>
 
         {/* Filter Dropdowns */}
-        <div style={{ display: 'flex', gap: '0.5rem', width: isMobile ? '100%' : 'auto', flexWrap: 'wrap' }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: isMobile ? '1fr 1fr' : 'auto auto',
+          gap: '0.65rem',
+          width: isMobile ? '100%' : 'auto'
+        }}>
           {/* Role Filter */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flex: isMobile ? '1 1 45%' : 'none' }}>
-            <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '600' }}>Rôle :</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+            <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: '600' }}>Rôle :</span>
             <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
               style={{
-                width: isMobile ? '100%' : 'auto',
-                padding: '0.55rem 0.75rem',
+                width: '100%',
+                padding: '0.55rem 0.65rem',
                 backgroundColor: '#0f1115',
                 border: '1px solid #334155',
                 borderRadius: '6px',
                 color: '#f8fafc',
-                fontSize: '0.82rem'
+                fontSize: '0.82rem',
+                minHeight: '42px'
               }}
             >
-              <option value="ALL">Tous</option>
+              <option value="ALL">Tous les rôles</option>
               <option value="Admin">Admin</option>
               <option value="Lead">Chef d'équipe</option>
               <option value="Member">Membre</option>
@@ -374,24 +419,25 @@ export default function AdminUsersView() {
           </div>
 
           {/* Department Filter */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flex: isMobile ? '1 1 45%' : 'none' }}>
-            <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '600' }}>Pôle :</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+            <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: '600' }}>Pôle :</span>
             <select
               value={deptFilter}
               onChange={(e) => setDeptFilter(e.target.value)}
               style={{
-                width: isMobile ? '100%' : 'auto',
-                padding: '0.55rem 0.75rem',
+                width: '100%',
+                padding: '0.55rem 0.65rem',
                 backgroundColor: '#0f1115',
                 border: '1px solid #334155',
                 borderRadius: '6px',
                 color: '#f8fafc',
-                fontSize: '0.82rem'
+                fontSize: '0.82rem',
+                minHeight: '42px'
               }}
             >
-              <option value="ALL">Tous</option>
+              <option value="ALL">Tous les pôles</option>
               {DEPARTMENTS.map(d => (
-                <option key={d.code} value={d.code}>{d.code}</option>
+                <option key={d.code} value={d.code}>[{d.code}] {d.name}</option>
               ))}
             </select>
           </div>
@@ -479,7 +525,20 @@ export default function AdminUsersView() {
                       <Trash2 style={{ width: '16px', height: '16px' }} />
                     </button>
                   ) : (
-                    <span style={{ fontSize: '0.72rem', color: '#64748b' }}>—</span>
+                    <span style={{
+                      fontSize: '0.7rem',
+                      color: '#64748b',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.25rem',
+                      padding: '0.25rem 0.5rem',
+                      backgroundColor: '#14171f',
+                      borderRadius: '5px',
+                      border: '1px solid #1e2430'
+                    }}>
+                      <Lock style={{ width: '11px', height: '11px', color: '#64748b' }} />
+                      <span>Protégé</span>
+                    </span>
                   )}
                 </div>
 
@@ -500,8 +559,14 @@ export default function AdminUsersView() {
                   )}
                 </div>
 
-                {/* Form controls: Department & Role */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid #1c202a' }}>
+                {/* Form controls: Department & Role (Stacked on mobile to prevent truncation) */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+                  gap: isMobile ? '0.65rem' : '0.5rem',
+                  paddingTop: '0.5rem',
+                  borderTop: '1px solid #1c202a'
+                }}>
                   {/* Department Select */}
                   <div>
                     <label style={{ display: 'block', fontSize: '0.7rem', color: '#94a3b8', marginBottom: '0.2rem', fontWeight: '600' }}>
